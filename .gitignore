@@ -1,0 +1,6 @@
+.vs
+src/.vs
+src/build
+src/out
+*.user
+*.ini
