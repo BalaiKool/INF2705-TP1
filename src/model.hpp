@@ -17,4 +17,3 @@ private:
     GLuint vao_, vbo_, ebo_;
     GLsizei count_;
 };
-

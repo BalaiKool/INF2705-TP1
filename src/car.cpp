@@ -1,23 +1,18 @@
 #include "car.hpp"
-
-#include <cmath>
-
-#include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
-
 
 using namespace gl;
 using namespace glm;
 
-    
 Car::Car()
-: position(0.0f, 0.0f, 0.0f), orientation(0.0f, 0.0f), speed(0.f)
-, wheelsRollAngle(0.f), steeringAngle(0.f)
-, isHeadlightOn(false), isBraking(false)
-, isLeftBlinkerActivated(false), isRightBlinkerActivated(false)
-, isBlinkerOn(false), blinkerTimer(0.f)
-{}
+    : position(0.0f, 0.0f, 0.0f), orientation(0.0f, 0.0f)
+    , speed(0.f), wheelsRollAngle(0.f), steeringAngle(0.f)
+    , isHeadlightOn(false), isBraking(false)
+    , isLeftBlinkerActivated(false), isRightBlinkerActivated(false)
+    , isBlinkerOn(false), blinkerTimer(0.f)
+{
+}
 
 void Car::loadModels()
 {
@@ -34,36 +29,30 @@ void Car::update(float deltaTime)
         const float LOW_SPEED_THRESHOLD = 0.1f;
         const float BRAKE_APPLIED_SPEED_THRESHOLD = 0.01f;
         const float BRAKING_FORCE = 4.f;
-    
-        if (fabs(speed) < LOW_SPEED_THRESHOLD)
-            speed = 0.f;
-            
-        if (speed > BRAKE_APPLIED_SPEED_THRESHOLD)
-            speed -= BRAKING_FORCE * deltaTime;
-        else if (speed < -BRAKE_APPLIED_SPEED_THRESHOLD)
-            speed += BRAKING_FORCE * deltaTime;
+
+        if (fabs(speed) < LOW_SPEED_THRESHOLD) speed = 0.f;
+        else if (speed > BRAKE_APPLIED_SPEED_THRESHOLD) speed -= BRAKING_FORCE * deltaTime;
+        else if (speed < -BRAKE_APPLIED_SPEED_THRESHOLD) speed += BRAKING_FORCE * deltaTime;
     }
-    
+
     const float WHEELBASE = 2.7f;
-    float angularSpeed = speed * sin(-glm::radians(steeringAngle)) / WHEELBASE;
+    float angularSpeed = speed * sin(-radians(steeringAngle)) / WHEELBASE;
     orientation.y += angularSpeed * deltaTime;
-    
-    glm::vec3 positionMod = glm::rotate(glm::mat4(1.0f), orientation.y, glm::vec3(0.0f, 1.0f, 0.0f)) * glm::vec4(-speed, 0.f, 0.f, 1.f);
-    position += positionMod * deltaTime;
-    
+
+    vec3 posMod = vec3(rotate(mat4(1.0f), orientation.y, vec3(0.f, 1.f, 0.f)) * vec4(-speed, 0.f, 0.f, 1.f));
+    position += posMod * deltaTime;
+
     const float WHEEL_RADIUS = 0.2f;
     wheelsRollAngle += speed / (2.f * M_PI * WHEEL_RADIUS) * deltaTime;
-    
-    if (wheelsRollAngle > M_PI)
-        wheelsRollAngle -= 2.f * M_PI;
-    else if (wheelsRollAngle < -M_PI)
-        wheelsRollAngle += 2.f * M_PI;
-        
+
+    if (wheelsRollAngle > M_PI) wheelsRollAngle -= 2.f * M_PI;
+    else if (wheelsRollAngle < -M_PI) wheelsRollAngle += 2.f * M_PI;
+
     if (isRightBlinkerActivated || isLeftBlinkerActivated)
     {
-        const float BLINKER_PERIOD_SEC = 0.5f;
+        const float BLINKER_PERIOD = 0.5f;
         blinkerTimer += deltaTime;
-        if (blinkerTimer > BLINKER_PERIOD_SEC)
+        if (blinkerTimer > BLINKER_PERIOD)
         {
             blinkerTimer = 0.f;
             isBlinkerOn = !isBlinkerOn;
@@ -73,108 +62,98 @@ void Car::update(float deltaTime)
     {
         isBlinkerOn = true;
         blinkerTimer = 0.f;
-    }  
+    }
 }
 
 void Car::draw(glm::mat4& projView)
 {
-    // TODO: Dessin de la totalité de l'automobile.
-    //       Elle sera positionnée et orientée selon les propriétés
-    //       position et orientation, respectivement.
-    //
-    //       L'automobile est constituée d'un châssis, de 4 roues
-    //       et de 4 phares.
-    //
-    //       Les modèles sont faits de façon à ce que le devant de la voiture
-    //       soit en -x (x négatif, vers la gauche dans l'écran).
-}
-    
-void Car::drawFrame()
-{
-    // TODO: Dessin du châssis de l'automobile.
-    //       Le châssis est positionné 0.25 unité au-dessus de l'origine de
-    //       l'automobile.
+    // Global car transform
+    mat4 carTransform = translate(mat4(1.0f), position);
+    carTransform = rotate(carTransform, orientation.y, vec3(0.f, 1.f, 0.f));
+    mat4 carMVP = projView * carTransform;
+
+    drawFrame(carMVP);
+    drawWheels(carMVP);
+    drawHeadlights(carMVP);
 }
 
-void Car::drawWheel()
+void Car::drawFrame(const mat4& carMVP)
 {
-    // TODO: Dessin d'une roue.
-    //       La roue doit être positionnée en dessous du châssis (voir Car::drawWheels).
-    //
-    //       Les roues tournent selon wheelsRollAngle (en radian).
-    //       
-    //       Les roues avant peuvent tourner sur elles-mêmes pour orienter la trajectoire
-    //       de l'automobile avec l'attribut steeringAngle (en degrés).
-    //
-    //       Malheureusement, l'origine de l'objet n'est pas centrée. Il faudra
-    //       changer l'axe de rotation. Celui-ci est 0.10124 unité vers
-    //       l'intérieur de la roue (voir le schéma 4 dans l'énoncé).
+    mat4 model = translate(mat4(1.0f), vec3(0.f, 0.25f, 0.f));
+    mat4 mvp = carMVP * model;
+    glUniformMatrix4fv(mvpUniformLocation, 1, GL_FALSE, value_ptr(mvp));
+    frame_.draw();
 }
 
-void Car::drawWheels()
+void Car::drawWheel(const mat4& carMVP, const vec3& pos, bool isFront)
 {
-    // TODO: Dessin des 4 roues.
-    //       Utilisez Car::drawWheel et WHEEL_POSITIONS.
-    
-    const glm::vec3 WHEEL_POSITIONS[] =
-    {
-        glm::vec3(-1.29f, 0.245f, -0.57f),
-        glm::vec3(-1.29f, 0.245f,  0.57f),
-        glm::vec3( 1.4f , 0.245f, -0.57f),
-        glm::vec3( 1.4f , 0.245f,  0.57f)
+    mat4 model = translate(mat4(1.0f), pos);
+    if (isFront) model = rotate(model, radians(steeringAngle), vec3(0.f, 1.f, 0.f));
+    model = rotate(model, wheelsRollAngle, vec3(1.f, 0.f, 0.f));
+    model = translate(model, vec3(0.10124f, 0.f, 0.f));
+
+    mat4 mvp = carMVP * model;
+    glUniformMatrix4fv(mvpUniformLocation, 1, GL_FALSE, value_ptr(mvp));
+    wheel_.draw();
+}
+
+void Car::drawWheels(const mat4& carMVP)
+{
+    const vec3 positions[4] = {
+        vec3(-1.29f, 0.245f, -0.57f), // rear left
+        vec3(-1.29f, 0.245f,  0.57f), // rear right
+        vec3(1.4f , 0.245f, -0.57f), // front left
+        vec3(1.4f , 0.245f,  0.57f)  // front right
     };
+
+    for (int i = 0; i < 4; ++i)
+        drawWheel(carMVP, positions[i], i >= 2); // front wheels: index 2 & 3
 }
 
-void Car::drawBlinker()
+void Car::drawBlinker(const mat4& carMVP, const vec3& pos, bool isLeft)
 {
-    // TODO: Dessin d'un cligotant d'un phare.
-    //       Il est positionné à z=-0.06065.
-    
-    bool isLeftHeadlight = false;
-    bool isBlinkerActivated = (isLeftHeadlight  && isLeftBlinkerActivated) ||
-                              (!isLeftHeadlight && isRightBlinkerActivated);
+    mat4 model = translate(mat4(1.0f), pos);
+    mat4 mvp = carMVP * model;
+    glUniformMatrix4fv(mvpUniformLocation, 1, GL_FALSE, value_ptr(mvp));
 
-    const glm::vec3 ON_COLOR (1.0f, 0.7f , 0.3f );
-    const glm::vec3 OFF_COLOR(0.5f, 0.35f, 0.15f);
-    
-    // TODO: Changement de couleur si le clignotant est activé ou non.
-    // if (isBlinkerOn && isBlinkerActivated)
-    //    ...
+    vec3 color = (isBlinkerOn && ((isLeft && isLeftBlinkerActivated) || (!isLeft && isRightBlinkerActivated)))
+        ? vec3(1.f, 0.7f, 0.3f)
+        : vec3(0.5f, 0.35f, 0.15f);
+    glUniform3fv(colorModUniformLocation, 1, value_ptr(color));
+    blinker_.draw();
 }
 
-void Car::drawLight()
+void Car::drawLight(const mat4& carMVP, const vec3& pos, bool isFront)
 {
-    // TODO: Dessin d'une lumière de phare.
-    //       Elle est positionnée à z=0.029.
-    //       Les lumières avant et arrière ne sont pas de la même couleur
-    //       et peuvent être allumées et éteintes.
-    //       Les lumières avant s'ouvrent avec isHeadlightOn, alors que celle
-    //       de l'arrière avec isBraking.
+    mat4 model = translate(mat4(1.0f), pos);
+    mat4 mvp = carMVP * model;
+    glUniformMatrix4fv(mvpUniformLocation, 1, GL_FALSE, value_ptr(mvp));
 
-    const glm::vec3 FRONT_ON_COLOR (1.0f, 1.0f, 1.0f);
-    const glm::vec3 FRONT_OFF_COLOR(0.5f, 0.5f, 0.5f);
-    const glm::vec3 REAR_ON_COLOR  (1.0f, 0.1f, 0.1f);
-    const glm::vec3 REAR_OFF_COLOR (0.5f, 0.1f, 0.1f);
+    vec3 color = isFront ? (isHeadlightOn ? vec3(1.f) : vec3(0.5f))
+        : (isBraking ? vec3(1.f, 0.1f, 0.1f) : vec3(0.5f, 0.1f, 0.1f));
+    glUniform3fv(colorModUniformLocation, 1, value_ptr(color));
+    light_.draw();
 }
 
-void Car::drawHeadlight()
+void Car::drawHeadlight(const mat4& carMVP, const vec3& pos, bool isLeft, bool isFront)
 {
-    // TODO: Dessin d'un phare de l'automobile.
-    //       Un phare est constitué d'une lumière et d'un clignotant.
-    //       Le phare doit être positionné devant ou derrière le châssis (voir Car::drawHeadlights)
+    drawLight(carMVP, pos, isFront);
+    drawBlinker(carMVP, pos, isLeft);
 }
 
-void Car::drawHeadlights()
+void Car::drawHeadlights(const mat4& carMVP)
 {
-    // TODO: Dessin des 4 phares.
-    //       Utilisez Car::drawHeadlight et HEADLIGHT_POSITIONS.
-    
-    const glm::vec3 HEADLIGHT_POSITIONS[] =
-    {
-        glm::vec3(-2.0019f, 0.64f, -0.45f),
-        glm::vec3(-2.0019f, 0.64f,  0.45f),
-        glm::vec3( 2.0019f, 0.64f, -0.45f),
-        glm::vec3( 2.0019f, 0.64f,  0.45f)
+    const vec3 positions[4] = {
+        vec3(-2.0019f, 0.64f, -0.45f), // AVG
+        vec3(-2.0019f, 0.64f,  0.45f), // AVD
+        vec3(2.0019f, 0.64f, -0.45f), // ARG
+        vec3(2.0019f, 0.64f,  0.45f)  // ARD
     };
-}
 
+    for (int i = 0; i < 4; ++i)
+    {
+        bool isFront = i < 2;
+        bool isLeft = i % 2 == 0;
+        drawHeadlight(carMVP, positions[i], isLeft, isFront);
+    }
+}

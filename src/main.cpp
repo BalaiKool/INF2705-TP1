@@ -26,7 +26,6 @@
 using namespace gl;
 using namespace glm;
 
-// TODO: Il est fortement recommandé de définir quelques structs (...)
 struct Vertex
 {
     glm::vec3 position;
@@ -63,12 +62,8 @@ struct App : public OpenGLApplication
         );
 
         // Config de base.
-
-        // TODO: Initialisez la couleur de fond.
         glClearColor(0.5f, 0.5f, 0.5f, 1.0f);
 
-        // TODO: Partie 2: Activez le test de profondeur (GL_DEPTH_TEST) et
-        //       l'élimination des faces arrières (GL_CULL_FACE).
         glEnable(GL_DEPTH_TEST);
         glEnable(GL_CULL_FACE);
 
@@ -79,13 +74,8 @@ struct App : public OpenGLApplication
 
         // Partie 2
         loadModels();
-
-        // TODO: Insérez les initialisations supplémentaires ici au besoin.
-        GLuint basicSP_ = 0;
-        GLuint transformSP_ = 0;
-        GLuint vbo_ = 0, ebo_ = 0, vao_ = 0;
-        GLint mvpUniformLocation_ = -1;
-        GLint colorModUniformLocation_ = -1;
+        car_.mvpUniformLocation = mvpUniformLocation_;
+        car_.colorModUniformLocation = colorModUniformLocation_;
     }
 
 
@@ -122,9 +112,7 @@ struct App : public OpenGLApplication
     // Appelée à chaque trame. Le buffer swap est fait juste après.
     void drawFrame() override
     {
-        // TODO: Nettoyage de la surface de dessin.
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        // TODO: Partie 2: Ajoutez le nettoyage du tampon de profondeur.
 
         ImGui::Begin("Scene Parameters");
         ImGui::Combo("Scene", &currentScene_, SCENE_NAMES, N_SCENE_NAMES);
@@ -253,10 +241,6 @@ struct App : public OpenGLApplication
 
     GLuint loadShaderObject(GLenum type, const char* path)
     {
-        // TODO: Chargement d'un shader object.
-        //       Utilisez readFile pour lire le fichier.
-        //       N'oubliez pas de vérifier les erreurs suite à la compilation
-        //       avec la méthode App::checkShaderCompilingError.
         std::ifstream file(path);
         std::stringstream buffer;
         buffer << file.rdbuf();
@@ -271,34 +255,45 @@ struct App : public OpenGLApplication
     }
 
     void loadShaderPrograms()
-    {
-        // TODO: Chargement des shader programs.
-        //       N'oubliez pas de vérifier les erreurs suite à la liaison (linking)
-        //       avec la méthode App::checkProgramLinkingError. Vous pouvez
-        //       donner un nom unique pour plus facilement lire les erreurs 
-        //       dans la console.
-        //       Il est recommandé de détacher et de supprimer les shaders objects
-        //       directement après la liaison.
+{
+    // Partie 1 : basic (déjà présent)
+    GLuint vs = loadShaderObject(GL_VERTEX_SHADER, "./shaders/basic.vs.glsl");
+    GLuint fs = loadShaderObject(GL_FRAGMENT_SHADER, "./shaders/basic.fs.glsl");
+    basicSP_ = glCreateProgram();
+    glAttachShader(basicSP_, vs);
+    glAttachShader(basicSP_, fs);
+    glLinkProgram(basicSP_);
+    checkProgramLinkingError("basicSP", basicSP_);
+    glDetachShader(basicSP_, vs);
+    glDetachShader(basicSP_, fs);
+    glDeleteShader(vs);
+    glDeleteShader(fs);
 
-        // Partie 1
-        GLuint vs = loadShaderObject(GL_VERTEX_SHADER, "./shaders/basic.vs.glsl");
-        GLuint fs = loadShaderObject(GL_FRAGMENT_SHADER, "./shaders/basic.fs.glsl");
-        basicSP_ = glCreateProgram();
-        glAttachShader(basicSP_, vs);  // detach
-        glAttachShader(basicSP_, fs);
-        glLinkProgram(basicSP_);
-        checkProgramLinkingError("basicSP", basicSP_);
-        glDeleteShader(vs);
-        glDeleteShader(fs);
+    // Partie 2 : transform (pour modèles 3D)
+    const char* TRANSFORM_VERTEX_SRC_PATH   = "./shaders/transform.vs.glsl";
+    const char* TRANSFORM_FRAGMENT_SRC_PATH = "./shaders/transform.fs.glsl";
 
-        // Partie 2
-        const char* TRANSFORM_VERTEX_SRC_PATH = "./shaders/transform.vs.glsl";
-        const char* TRANSFORM_FRAGMENT_SRC_PATH = "./shaders/transform.fs.glsl";
+    GLuint vs2 = loadShaderObject(GL_VERTEX_SHADER,   TRANSFORM_VERTEX_SRC_PATH);
+    GLuint fs2 = loadShaderObject(GL_FRAGMENT_SHADER, TRANSFORM_FRAGMENT_SRC_PATH);
+    transformSP_ = glCreateProgram();
+    glAttachShader(transformSP_, vs2);
+    glAttachShader(transformSP_, fs2);
+    glLinkProgram(transformSP_);
+    checkProgramLinkingError("transformSP", transformSP_);
+    glDetachShader(transformSP_, vs2);
+    glDetachShader(transformSP_, fs2);
+    glDeleteShader(vs2);
+    glDeleteShader(fs2);
 
-        // TODO: Allez chercher les locations de vos variables uniform dans le shader
-        //       pour initialiser mvpUniformLocation_ et car_.mvpUniformLocation,
-        //       puis colorModUniformLocation_ et car_.colorModUniformLocation.
-    }
+    // Récupérer les locations d'uniformes (uMVP et uColorMod)
+    mvpUniformLocation_      = glGetUniformLocation(transformSP_, "uMVP");
+    colorModUniformLocation_ = glGetUniformLocation(transformSP_, "uColorMod");
+
+    if (mvpUniformLocation_ == -1)
+        std::cerr << "Warning: uMVP not found in transform shader (transformSP_)." << std::endl;
+    if (colorModUniformLocation_ == -1)
+        std::cerr << "Warning: uColorMod not found in transform shader (transformSP_)." << std::endl;
+}
 
     void generateNgon(unsigned int side)
     {
@@ -385,85 +380,88 @@ struct App : public OpenGLApplication
 
     void drawStreetlights(glm::mat4& projView)
     {
-        // TODO: Dessin des lampadaires. Ceux-ci doivent être immobiles.
-        //
-        //       Ceux-ci ont des positions aléatoires.
-        //       Le long de la route, ils sont distancés les uns des autres de [10, 20].
-        //       La distance par rapport au bord de la route est de 0.5.
-        //       La hauteur est de -0.15 (un peu renfoncé dans le sol).
-        //
-        //       Ils sont toujours orientés de façon perpendiculaire à la route
-        //       pour "l'éclairer".
-        //
-        //       Les nombres n'ont pas vraiment d'importance, libre à vous de les
-        //       modifier, l'important est d'avoir les deux transformations
-        //       indépendantes les unes des autres.
+        glUseProgram(transformSP_);
+
+        float z = 0.f;
+        for (unsigned int i = 0; i < N_STREETLIGHTS; i++)
+        {
+            z += 12.f + (rand() % 8);
+            float x = (i % 2 == 0 ? 2.5f : -2.5f);
+
+            glm::mat4 model(1.0f);
+            model = glm::translate(model, glm::vec3(x, -0.15f, z));
+
+            glUniformMatrix4fv(mvpUniformLocation_, 1, GL_FALSE, glm::value_ptr(projView * model));
+            glUniform3fv(colorModUniformLocation_, 1, glm::value_ptr(glm::vec3(1.f, 1.f, 1.f)));
+            streetlight_.draw();
+        }
     }
+
+
 
     void drawTrees(glm::mat4& projView)
     {
-        // TODO: Dessin des arbres. Ceux-ci doivent être immobiles.
-        //
-        //       Ceux-ci ont des positions aléatoires.
-        //       Le long de la route, ils sont distancés les uns des autres de [5, 11].
-        //       La distance par rapport au bord de la route est de [1.5, 3.5].
-        //       La hauteur est toujours de -0.15 (un peu renfoncé dans le sol).
-        //
-        //       Ils ont aussi une orientation aléatoire entre [0, 2pi].
-        //
-        //       Pour finir, ils ont une mise à l'échelle sur tous leurs axes
-        //       d'un facteur variant entre [0.6, 1.2].
-        //
-        //       Les nombres n'ont pas vraiment d'importance, libre à vous de les
-        //       modifier, l'important est d'avoir les trois transformations
-        //       indépendantes les unes des autres.
+        glUseProgram(transformSP_);
+
+        for (unsigned int i = 0; i < N_TREES; i++)
+        {
+            glm::mat4 model(1.0f);
+            float z = i * 8.f;
+            float x = (i % 2 == 0) ? 3.f : -3.f;
+            model = glm::translate(model, glm::vec3(x, -0.15f, z));
+
+            float angleDeg = static_cast<float>(rand() % 360);
+            float angleRad = glm::radians(angleDeg);
+            model = glm::rotate(model, angleRad, glm::vec3(0.f, 1.f, 0.f));
+
+            float scale = 0.6f + (rand() % 60) / 100.f;
+            model = glm::scale(model, glm::vec3(scale));
+
+            glUniformMatrix4fv(mvpUniformLocation_, 1, GL_FALSE, glm::value_ptr(projView * model));
+            glUniform3fv(colorModUniformLocation_, 1, glm::value_ptr(glm::vec3(0.5f, 0.3f, 0.1f))); // brown tree
+            tree_.draw();
+        }
     }
+
+
 
     void drawGround(glm::mat4& projView)
     {
-        // TODO: Dessin du sol.
-        //       
-        //       La route a seulement une mise à l'échelle pour être longue de
-        //       100 unités et large de 5 unités. Le modèle original est un
-        //       carré de 1 unité. La ligne jaune devrait traverser le long de
-        //       la route.
-        //
-        //       Le gazon a aussi une mise à l'échelle pour être long de 100
-        //       unités et large de 50. Celui-ci doit aussi être légèrement en
-        //       dessous de la route de 0.1.
-        //       Boni: Que se passe-t-il s'il n'est pas déplacé? Comment expliquer
-        //       ce qui est visible?
+        glUseProgram(transformSP_);
+
+        glm::mat4 model(1.0f);
+        model = glm::scale(model, glm::vec3(5.f, 1.f, 100.f));
+        glUniformMatrix4fv(mvpUniformLocation_, 1, GL_FALSE, glm::value_ptr(projView * model));
+        glUniform3fv(colorModUniformLocation_, 1, glm::value_ptr(glm::vec3(1.f, 1.f, 1.f)));
+        street_.draw();
+
+        model = glm::translate(glm::mat4(1.0f), glm::vec3(0.f, -0.1f, 0.f));
+        model = glm::scale(model, glm::vec3(50.f, 1.f, 100.f));
+        glUniformMatrix4fv(mvpUniformLocation_, 1, GL_FALSE, glm::value_ptr(projView * model));
+        glUniform3fv(colorModUniformLocation_, 1, glm::value_ptr(glm::vec3(0.4f, 0.8f, 0.4f)));
+        grass_.draw();
     }
+
+
 
     glm::mat4 getViewMatrix()
     {
-        // TODO: Calculer la matrice de vue.
-        //
-        //       Vous n'avez pas le droit d'utiliser de fonction lookAt ou 
-        //       d'inversion de matrice. À la place, procéder en inversant
-        //       les opérations. N'oubliez pas que cette matrice est appliquée
-        //       aux éléments de la scène. Au lieu de déplacer la caméra 10
-        //       unités vers la gauche, on déplace le monde 10 unités vers la
-        //       droite.
-        //
-        //       La caméra est placée à la position cameraPosition et orientée
-        //       par les angles cameraOrientation (en radian).
+        glm::mat4 view(1.0f);
 
-        return glm::mat4(1.0);
+        view = glm::rotate(view, -cameraOrientation_.x, glm::vec3(1, 0, 0));
+        view = glm::rotate(view, -cameraOrientation_.y, glm::vec3(0, 1, 0));
+        view = glm::translate(view, -cameraPosition_);
+
+        return view;
     }
+
 
     glm::mat4 getPerspectiveProjectionMatrix()
     {
-        // TODO: Calculer la matrice de projection.
-        //
-        //       Celle-ci aura un fov de 70 degrés, un near à 0.1 et un far à 100.
-        //       Vous pouvez calculer le aspect ratio en utilisant la dimension de
-        //       la fenêtre. Attention à la division entière.
-
-        sf::Vector2u windowSize = window_.getSize();
-
-        return glm::mat4(1.0);
+        float screenRatio = static_cast<float>(window_.getSize().x) / static_cast<float>(window_.getSize().y);
+        return glm::perspective(glm::radians(70.0f), screenRatio, 0.1f, 100.0f);
     }
+
 
     void sceneModels()
     {
@@ -481,10 +479,18 @@ struct App : public OpenGLApplication
         updateCameraInput();
         car_.update(deltaTime_);
 
-        // TODO: Dessin de la totalité de la scène graphique.
-        //       On devrait voir la route, le gazon, les arbres, les lampadaires
-        //       et la voiture. La voiture est contrôlable avec l'interface graphique.
+        glm::mat4 proj = getPerspectiveProjectionMatrix();
+        glm::mat4 view = getViewMatrix();
+        glm::mat4 projView = proj * view;
+
+        drawGround(projView);
+        drawTrees(projView);
+        drawStreetlights(projView);
+
+        glUseProgram(transformSP_);
+        car_.draw(projView);
     }
+
 
 private:
     // Shaders
