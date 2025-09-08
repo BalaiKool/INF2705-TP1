@@ -300,35 +300,41 @@ struct App : public OpenGLApplication
         //       puis colorModUniformLocation_ et car_.colorModUniformLocation.
     }
 
-    // TODO: Modifiez les types de vertices et elements pour votre besoin.
-    void generateNgon(void* vertices, void* elements, unsigned int side)
+    void generateNgon(unsigned int side)
     {
-        // TODO: Générez un polygone à N côtés (couramment appelé N-gon).
-        //       Vous devez gérer les cas entre 5 et 12 côtés (pentagone, hexagone
-        //       , etc.). Ceux-ci ont un rayon constant de 0.7.
-        //       Chaque point possède une couleur (libre au choix).
-        //       Vous devez minimiser le nombre de points et définir des indices
-        //       pour permettre la réutilisation.        
-
         const float RADIUS = 0.7f;
+        vertices_[0].position = glm::vec3(0.f, 0.f, 0.f);
+        vertices_[0].color = glm::vec3(1.f, 1.f, 1.f);
+
+        for (unsigned int i = 0; i < side; ++i)
+        {
+            float angle = (2.f * M_PI * i) / side;
+            vertices_[i + 1].position = glm::vec3(
+                RADIUS * cos(angle),
+                RADIUS * sin(angle),
+                0.f
+            );
+
+            switch (i % 3) {
+            case 0: vertices_[i + 1].color = glm::vec3(1.f, 0.f, 0.f); break; // rouge
+            case 1: vertices_[i + 1].color = glm::vec3(0.f, 1.f, 0.f); break; // vert
+            case 2: vertices_[i + 1].color = glm::vec3(0.f, 0.f, 1.f); break; // bleu
+            }
+        }
+
+        for (unsigned int i = 0; i < side; ++i)
+        {
+            elements_[i * 3 + 0] = 0;
+            elements_[i * 3 + 1] = i + 1;
+            elements_[i * 3 + 2] = (i + 1) % side + 1;
+        }
     }
+
+
+
 
     void initShapeData()
     {
-        // TODO: Initialisez les objets graphiques pour le dessin du polygone.
-        //       Ne passez aucune donnée pour le moment (déjà géré dans App::sceneShape),
-        //       on demande seulement de faire l'allocation de buffers suffisamment gros
-        //       pour contenir le polygone durant toute l'exécution du programme.
-        //       Réfléchissez bien à l'usage des buffers (paramètre de glBufferData).
-
-        Vertex vertices[3] = {
-            { glm::vec3(-0.5f, -0.5f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f) },
-            { glm::vec3(0.5f, -0.5f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f) },
-            { glm::vec3(0.0f,  0.5f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f) }
-        };
-
-        GLuint indices[3] = { 0, 1, 2 };
-
         glGenVertexArrays(1, &vao_);
         glGenBuffers(1, &vbo_);
         glGenBuffers(1, &ebo_);
@@ -336,24 +342,18 @@ struct App : public OpenGLApplication
         glBindVertexArray(vao_);
 
         glBindBuffer(GL_ARRAY_BUFFER, vbo_);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(vertices_), nullptr, GL_DYNAMIC_DRAW);
 
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo_);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(elements_), nullptr, GL_DYNAMIC_DRAW);
 
-        // position attrib
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)0);
         glEnableVertexAttribArray(0);
 
-        // color attrib
         glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, color));
         glEnableVertexAttribArray(1);
 
         glBindVertexArray(0);
-
-        // TODO: Créez un vao et spécifiez le format des données dans celui-ci.
-        //       N'oubliez pas de lier le ebo avec le vao et de délier le vao
-        //       du contexte pour empêcher des modifications sur celui-ci.
     }
 
     void sceneShape()
@@ -366,21 +366,21 @@ struct App : public OpenGLApplication
         if (hasNumberOfSidesChanged)
         {
             oldNSide_ = nSide_;
-            // generateNgon(vertices_, elements_, nSide_);
+            generateNgon(nSide_);
 
-            // TODO: Le nombre de côtés a changé, la méthode App::generateNgon
-            //       (que vous avez implémentée) a modifié les données sur le CPU.
-            //       Ici, il faut envoyer les données à jour au GPU.
-            //       Attention, il ne faut pas faire d'allocation/réallocation, on veut
-            //       seulement mettre à jour les buffers actuels.
+            glBindBuffer(GL_ARRAY_BUFFER, vbo_);
+            glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(Vertex) * (nSide_ + 1), vertices_.data());
+
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo_);
+            glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, sizeof(GLuint) * nSide_ * 3, elements_.data());
         }
 
-        // --- Dessin (triangle pour l’instant, polygone plus tard) ---
         glUseProgram(basicSP_);
         glBindVertexArray(vao_);
-        glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, 0);
+        glDrawElements(GL_TRIANGLES, nSide_ * 3, GL_UNSIGNED_INT, 0);
         glBindVertexArray(0);
     }
+
 
 
     void drawStreetlights(glm::mat4& projView)
