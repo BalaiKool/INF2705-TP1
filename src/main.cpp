@@ -249,23 +249,54 @@ struct App : public OpenGLApplication
     void initModelProperties()
     {
         initStreetlights();
+        initTrees();
     }
 
     void initStreetlights()
     {
         lightsPosition.clear();
         lightsPosition.reserve(N_STREETLIGHTS);
-        float z = -60.f; // Terrain va de -60 à 40 dans les z
+        //TODO: remove magic numbers
+        float z = -0.f; // Terrain va de -60 à 40 dans les z
 
 
         for (unsigned int i = 0; i < N_STREETLIGHTS; i++)
         {
             z += 100.f / N_STREETLIGHTS+(rand() % N_STREETLIGHTS);
-            z = std::min(z, 40.f);
-            lightsPosition.push_back(z);
+            z = std::fmod(z, 110.f); //loops back to the start if it goes too far;
+            lightsPosition.push_back(z - 60.f);
         }
     }
 
+    void initTrees()
+    {
+        treesPosition.clear();
+        treesOrientation.clear();
+        treesScale.clear();
+
+        treesPosition.reserve(N_TREES);
+        treesOrientation.reserve(N_TREES);
+        treesScale.reserve(N_TREES);
+
+        float z = 0.f; //TODO: same as above
+
+        for (unsigned int i = 0; i < N_TREES; i++)
+        {
+            //Position
+            z += 100.f / N_TREES + (rand() % N_TREES);
+            z = std::fmod(z,110.f); //loops back to the start if it goes too far
+            treesPosition.push_back(z - 60.f);
+        
+            //Orientation
+            float angleDeg = static_cast<float>(rand() % 360);
+            float angleRad = glm::radians(angleDeg);
+            treesOrientation.push_back(angleRad);
+
+            //Scale
+            float scale = 0.6f + (rand() % 60) / 100.f;
+            treesScale.push_back(scale);
+        }
+    }
     GLuint loadShaderObject(GLenum type, const char* path)
     {
         std::ifstream file(path);
@@ -436,15 +467,14 @@ struct App : public OpenGLApplication
         for (unsigned int i = 0; i < N_TREES; i++)
         {
             glm::mat4 model(1.0f);
-            float z = i * 8.f;
+            float z = treesPosition[i];
             float x = (i % 2 == 0) ? 3.f : -3.f;
             model = glm::translate(model, glm::vec3(x, -0.15f, z));
 
-            float angleDeg = static_cast<float>(rand() % 360);
-            float angleRad = glm::radians(angleDeg);
+            float angleRad = treesOrientation[i];
             model = glm::rotate(model, angleRad, glm::vec3(0.f, 1.f, 0.f));
 
-            float scale = 0.6f + (rand() % 60) / 100.f;
+            float scale = treesScale[i];
             model = glm::scale(model, glm::vec3(scale));
 
             glUniformMatrix4fv(mvpUniformLocation_, 1, GL_FALSE, glm::value_ptr(projView * model));
@@ -559,6 +589,9 @@ private:
 
     //Objects properties
     std::vector<float> lightsPosition;
+    std::vector<float> treesPosition;
+    std::vector<float> treesOrientation;
+    std::vector<float> treesScale;
 
     // Imgui var
     const char* const SCENE_NAMES[2] = {
