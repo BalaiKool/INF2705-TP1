@@ -243,9 +243,28 @@ struct App : public OpenGLApplication
         streetlight_.load("../models/streetlight.ply");
         grass_.load("../models/grass.ply");
         street_.load("../models/street.ply");
+        initModelProperties();
     }
 
-    
+    void initModelProperties()
+    {
+        initStreetlights();
+    }
+
+    void initStreetlights()
+    {
+        lightsPosition.clear();
+        lightsPosition.reserve(N_STREETLIGHTS);
+        float z = -60.f; // Terrain va de -60 à 40 dans les z
+
+
+        for (unsigned int i = 0; i < N_STREETLIGHTS; i++)
+        {
+            z += 100.f / N_STREETLIGHTS+(rand() % N_STREETLIGHTS);
+            z = std::min(z, 40.f);
+            lightsPosition.push_back(z);
+        }
+    }
 
     GLuint loadShaderObject(GLenum type, const char* path)
     {
@@ -390,10 +409,9 @@ struct App : public OpenGLApplication
     {
         glUseProgram(transformSP_);
 
-        float z = -60.f;
         for (unsigned int i = 0; i < N_STREETLIGHTS; i++)
         {
-            z += 120.f/N_STREETLIGHTS;//TODO: add random to pos (at init, not when drawing) +(rand() % 8);
+            float z = lightsPosition[i];
             float x = (i % 2 == 0 ? 3.f : -3.f);
 
             glm::mat4 model(1.0f);
@@ -538,6 +556,9 @@ private:
     static constexpr unsigned int N_STREETLIGHTS = 5;
     glm::mat4 treeModelMatrices_[N_TREES];
     glm::mat4 streetlightModelMatrices_[N_STREETLIGHTS];
+
+    //Objects properties
+    std::vector<float> lightsPosition;
 
     // Imgui var
     const char* const SCENE_NAMES[2] = {
