@@ -28,9 +28,15 @@ using namespace glm;
 
 struct Vertex
 {
-    glm::vec3 position;
-    glm::vec3 color;
+    vec3 position;
+    vec3 color;
 };
+
+
+// Définition des couleurs
+const vec4 red = { 1.f, 0.f, 0.f, 1.0f };
+const vec4 green = { 0.f, 1.f, 0.f, 1.0f };
+const vec4 blue = { 0.f, 0.f, 1.f, 1.0f };
 
 struct App : public OpenGLApplication
 {
@@ -303,7 +309,7 @@ struct App : public OpenGLApplication
 
         for (unsigned int i = 0; i < side; ++i)
         {
-            float angle = (2.f * M_PI * i) / side;
+            float angle = (2.f * M_PI * i) / side + M_PI/2;
             vertices_[i + 1].position = glm::vec3(
                 RADIUS * cos(angle),
                 RADIUS * sin(angle),
@@ -311,9 +317,9 @@ struct App : public OpenGLApplication
             );
 
             switch (i % 3) {
-            case 0: vertices_[i + 1].color = glm::vec3(1.f, 0.f, 0.f); break; // rouge
-            case 1: vertices_[i + 1].color = glm::vec3(0.f, 1.f, 0.f); break; // vert
-            case 2: vertices_[i + 1].color = glm::vec3(0.f, 0.f, 1.f); break; // bleu
+            case 0: vertices_[i + 1].color = red; break; // rouge
+            case 1: vertices_[i + 1].color = green; break; // vert
+            case 2: vertices_[i + 1].color = blue; break; // bleu
             }
         }
 
