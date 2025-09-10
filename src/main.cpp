@@ -245,6 +245,8 @@ struct App : public OpenGLApplication
         street_.load("../models/street.ply");
     }
 
+    
+
     GLuint loadShaderObject(GLenum type, const char* path)
     {
         std::ifstream file(path);
@@ -388,14 +390,18 @@ struct App : public OpenGLApplication
     {
         glUseProgram(transformSP_);
 
-        float z = 0.f;
+        float z = -60.f;
         for (unsigned int i = 0; i < N_STREETLIGHTS; i++)
         {
-            z += 12.f + (rand() % 8);
-            float x = (i % 2 == 0 ? 2.5f : -2.5f);
+            z += 120.f/N_STREETLIGHTS;//TODO: add random to pos (at init, not when drawing) +(rand() % 8);
+            float x = (i % 2 == 0 ? 3.f : -3.f);
 
             glm::mat4 model(1.0f);
             model = glm::translate(model, glm::vec3(x, -0.15f, z));
+
+            if (i % 2 == 1) {
+                model = model * glm::rotate(glm::mat4(1.0f), glm::radians(180.f), glm::vec3(0.f, 1.f, 0.f));
+            }
 
             glUniformMatrix4fv(mvpUniformLocation_, 1, GL_FALSE, glm::value_ptr(projView * model));
             glUniform3fv(colorModUniformLocation_, 1, glm::value_ptr(glm::vec3(1.f, 1.f, 1.f)));
