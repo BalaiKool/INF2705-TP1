@@ -51,8 +51,14 @@ void Model::load(const char* path)
             idx.push_back(static_cast<GLuint>(face[2]));
         }
     }
-
     count_ = static_cast<GLsizei>(idx.size());
+
+    glm::vec3 minV(FLT_MAX), maxV(-FLT_MAX);
+    for (const auto& pv : vtx) {
+        minV = glm::min(minV, pv.pos);
+        maxV = glm::max(maxV, pv.pos);
+    }
+    center_ = 0.5f * (minV + maxV);
 
     glGenVertexArrays(1, &vao_);
     glGenBuffers(1, &vbo_);

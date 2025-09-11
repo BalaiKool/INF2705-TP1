@@ -256,14 +256,13 @@ struct App : public OpenGLApplication
     {
         lightsPosition.clear();
         lightsPosition.reserve(N_STREETLIGHTS);
-        //TODO: remove magic numbers
-        float position = -0.f; // Terrain va de -60 à 40 dans les z
+        float position = -0.f;
 
 
         for (unsigned int i = 0; i < N_STREETLIGHTS; i++)
         {
             position += 110.f / N_STREETLIGHTS+(rand() % N_STREETLIGHTS);
-            position = std::fmod(position, 110.f); //loops back to the start if it goes too far;
+            position = std::fmod(position, 110.f);
             lightsPosition.push_back(position - 60.f);
         }
     }
@@ -278,21 +277,18 @@ struct App : public OpenGLApplication
         treesOrientation.reserve(N_TREES);
         treesScale.reserve(N_TREES);
 
-        float position = 0.f; //TODO: same as above
+        float position = 0.f;
 
         for (unsigned int i = 0; i < N_TREES; i++)
         {
-            //Position
             position += 100.f / N_TREES + (rand() % N_TREES);
-            position = std::fmod(position,110.f); //loops back to the start if it goes too far
+            position = std::fmod(position,110.f);
             treesPosition.push_back(position - 60.f);
         
-            //Orientation
             float angleDeg = static_cast<float>(rand() % 360);
             float angleRad = glm::radians(angleDeg);
             treesOrientation.push_back(angleRad);
 
-            //Scale
             float scale = 0.6f + (rand() % 60) / 100.f;
             treesScale.push_back(scale);
         }
@@ -314,7 +310,6 @@ struct App : public OpenGLApplication
 
     void loadShaderPrograms()
 {
-    // Partie 1 : basic (déjà présent)
     GLuint vs = loadShaderObject(GL_VERTEX_SHADER, "./shaders/basic.vs.glsl");
     GLuint fs = loadShaderObject(GL_FRAGMENT_SHADER, "./shaders/basic.fs.glsl");
     basicSP_ = glCreateProgram();
@@ -327,7 +322,6 @@ struct App : public OpenGLApplication
     glDeleteShader(vs);
     glDeleteShader(fs);
 
-    // Partie 2 : transform (pour modèles 3D)
     const char* TRANSFORM_VERTEX_SRC_PATH   = "./shaders/transform.vs.glsl";
     const char* TRANSFORM_FRAGMENT_SRC_PATH = "./shaders/transform.fs.glsl";
 
@@ -343,7 +337,6 @@ struct App : public OpenGLApplication
     glDeleteShader(vs2);
     glDeleteShader(fs2);
 
-    // Récupérer les locations d'uniformes (uMVP et uColorMod)
     mvpUniformLocation_      = glGetUniformLocation(transformSP_, "uMVP");
     colorModUniformLocation_ = glGetUniformLocation(transformSP_, "uColorMod");
 
@@ -369,9 +362,9 @@ struct App : public OpenGLApplication
             );
 
             switch (i % 3) {
-            case 0: vertices_[i + 1].color = red; break; // rouge
-            case 1: vertices_[i + 1].color = green; break; // vert
-            case 2: vertices_[i + 1].color = blue; break; // bleu
+            case 0: vertices_[i + 1].color = red; break;
+            case 1: vertices_[i + 1].color = green; break;
+            case 2: vertices_[i + 1].color = blue; break;
             }
         }
 
@@ -508,7 +501,6 @@ struct App : public OpenGLApplication
     { 
         glUseProgram(transformSP_);
 
-        //car Attributes
         glm::vec3 position = car_.position;
         glm::vec2 orientation = car_.orientation;
 
@@ -521,8 +513,6 @@ struct App : public OpenGLApplication
         bool isRightBlinkerActivated = car_.isRightBlinkerActivated;
         bool isBlinkerOn = car_.isBlinkerOn;
 
-      
-        //Car Updates
         if (isBraking) {
             if (speed ==0.f)
             {
@@ -536,7 +526,6 @@ struct App : public OpenGLApplication
         position.z += sin(steeringAngle) * speed;
         orientation.x += steeringAngle;
 
-        //Car Drawing
         car_.update(deltaTime_);
         car_.draw(projView);
         }
@@ -600,7 +589,6 @@ private:
     static constexpr unsigned int MIN_N_SIDES = 5;
     static constexpr unsigned int MAX_N_SIDES = 12;
 
-    // TODO: Modifiez les types de vertices_ et elements_ pour votre besoin.
     std::array<Vertex, MAX_N_SIDES + 1> vertices_;
     std::array<GLuint, MAX_N_SIDES * 3> elements_;
 
@@ -622,13 +610,11 @@ private:
     glm::mat4 treeModelMatrices_[N_TREES];
     glm::mat4 streetlightModelMatrices_[N_STREETLIGHTS];
 
-    //Objects properties
     std::vector<float> lightsPosition;
     std::vector<float> treesPosition;
     std::vector<float> treesOrientation;
     std::vector<float> treesScale;
 
-    // Imgui var
     const char* const SCENE_NAMES[2] = {
         "Introduction",
         "3D Model & transformation",

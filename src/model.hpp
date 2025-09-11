@@ -1,6 +1,7 @@
 #pragma once
 
 #include <glbinding/gl/gl.h>
+#include <glm/glm.hpp>
 
 using namespace gl;
 
@@ -12,6 +13,8 @@ public:
     ~Model();
     
     void draw();
+
+    glm::vec3 center_;
 
 private:
     GLuint vao_, vbo_, ebo_;

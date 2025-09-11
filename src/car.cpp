@@ -67,7 +67,6 @@ void Car::update(float deltaTime)
 
 void Car::draw(glm::mat4& projView)
 {
-    // Global car transform
     mat4 carTransform = translate(mat4(1.0f), position);
     carTransform = rotate(carTransform, orientation.y, vec3(0.f, 1.f, 0.f));
     mat4 carMVP = projView * carTransform;
@@ -85,12 +84,14 @@ void Car::drawFrame(const mat4& carMVP)
     frame_.draw();
 }
 
-void Car::drawWheel(const mat4& carMVP, const vec3& pos, bool isFront)
+void Car::drawWheel(const glm::mat4& carMVP, const glm::vec3& pos, bool isFront)
 {
     mat4 model = translate(mat4(1.0f), pos);
-    if (isFront) model = rotate(model, radians(steeringAngle), vec3(0.f, 1.f, 0.f));
-    model = rotate(model, wheelsRollAngle, vec3(1.f, 0.f, 0.f));
-    model = translate(model, vec3(0.10124f, 0.f, 0.f));
+    model = translate(model, -wheel_.center_);
+    if (isFront)
+        model = rotate(model, -radians(steeringAngle), vec3(0.f, 1.f, 0.f));
+    model = rotate(model, wheelsRollAngle, vec3(0.f, 0.f, 1.f));
+    model = translate(model, wheel_.center_);
 
     mat4 mvp = carMVP * model;
     glUniformMatrix4fv(mvpUniformLocation, 1, GL_FALSE, value_ptr(mvp));
@@ -100,19 +101,29 @@ void Car::drawWheel(const mat4& carMVP, const vec3& pos, bool isFront)
 void Car::drawWheels(const mat4& carMVP)
 {
     const vec3 positions[4] = {
-        vec3(-1.29f, 0.245f, -0.57f), // rear left
-        vec3(-1.29f, 0.245f,  0.57f), // rear right
-        vec3(1.4f , 0.245f, -0.57f), // front left
-        vec3(1.4f , 0.245f,  0.57f)  // front right
+        vec3(-1.29f, 0.245f, -0.62f),
+        vec3(-1.29f, 0.245f,  0.44f),
+        vec3(1.40f, 0.245f, -0.62f),
+        vec3(1.40f, 0.245f,  0.44f)
     };
 
-    for (int i = 0; i < 4; ++i)
-        drawWheel(carMVP, positions[i], i >= 2); // front wheels: index 2 & 3
+
+    for (int i = 0; i < 4; ++i) {
+        bool isFront = (i == 0 || i == 1); // roues avant
+        drawWheel(carMVP, positions[i], isFront);
+    }
 }
 
-void Car::drawBlinker(const mat4& carMVP, const vec3& pos, bool isLeft)
+void Car::drawBlinker(const mat4& carMVP, const vec3& pos, bool isLeft, bool isFront)
 {
     mat4 model = translate(mat4(1.0f), pos);
+
+    const float BLINKER_OFFSET = 0.001f;
+    if (isFront)
+        model = translate(model, vec3(-BLINKER_OFFSET, 0.f, 0.f));
+    else
+        model = translate(model, vec3(BLINKER_OFFSET, 0.f, 0.f));
+
     mat4 mvp = carMVP * model;
     glUniformMatrix4fv(mvpUniformLocation, 1, GL_FALSE, value_ptr(mvp));
 
@@ -122,6 +133,7 @@ void Car::drawBlinker(const mat4& carMVP, const vec3& pos, bool isLeft)
     glUniform3fv(colorModUniformLocation, 1, value_ptr(color));
     blinker_.draw();
 }
+
 
 void Car::drawLight(const mat4& carMVP, const vec3& pos, bool isFront)
 {
@@ -138,7 +150,7 @@ void Car::drawLight(const mat4& carMVP, const vec3& pos, bool isFront)
 void Car::drawHeadlight(const mat4& carMVP, const vec3& pos, bool isLeft, bool isFront)
 {
     drawLight(carMVP, pos, isFront);
-    drawBlinker(carMVP, pos, isLeft);
+    drawBlinker(carMVP, pos, isLeft, isFront);
 }
 
 void Car::drawHeadlights(const mat4& carMVP)

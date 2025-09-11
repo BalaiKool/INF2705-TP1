@@ -21,7 +21,7 @@ private:
     void drawWheel(const glm::mat4& carMVP, const glm::vec3& pos, bool isFront);
     void drawWheels(const glm::mat4& carMVP);
 
-    void drawBlinker(const glm::mat4& carMVP, const glm::vec3& pos, bool isLeft);
+    void drawBlinker(const glm::mat4& carMVP, const glm::vec3& pos, bool isLeft, bool isFront);
     void drawLight(const glm::mat4& carMVP, const glm::vec3& pos, bool isFront);
     void drawHeadlight(const glm::mat4& carMVP, const glm::vec3& pos, bool isLeft, bool isFront);
     void drawHeadlights(const glm::mat4& carMVP);
