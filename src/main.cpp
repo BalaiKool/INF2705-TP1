@@ -45,7 +45,7 @@ struct App : public OpenGLApplication
         , oldNSide_(0)
         , cameraPosition_(17.f, 9.f, 4.5f)
         , cameraOrientation_(-.3, 1.25f)
-        , currentScene_(1)
+        , currentScene_(0)
         , isMouseMotionEnabled_(false)
     {
     }
@@ -261,9 +261,9 @@ struct App : public OpenGLApplication
 
         for (unsigned int i = 0; i < N_STREETLIGHTS; i++)
         {
-            position += 110.f / N_STREETLIGHTS+(rand() % N_STREETLIGHTS);
-            position = std::fmod(position, 110.f);
-            lightsPosition.push_back(position - 60.f);
+            position = 110.f *i / N_STREETLIGHTS+(rand() % N_STREETLIGHTS);
+            position = std::fmod(position, 100.f);
+            lightsPosition.push_back(position - 50.f);
         }
     }
 
@@ -281,9 +281,9 @@ struct App : public OpenGLApplication
 
         for (unsigned int i = 0; i < N_TREES; i++)
         {
-            position += 100.f / N_TREES + (rand() % N_TREES);
-            position = std::fmod(position,110.f);
-            treesPosition.push_back(position - 60.f);
+            position = 110.f*i / N_TREES + (rand() % N_TREES);
+            position = std::fmod(position,100.f);
+            treesPosition.push_back(position -50.f);
         
             float angleDeg = static_cast<float>(rand() % 360);
             float angleRad = glm::radians(angleDeg);
@@ -499,33 +499,6 @@ struct App : public OpenGLApplication
 
     void drawCar(glm::mat4& projView)
     { 
-        glUseProgram(transformSP_);
-
-        glm::vec3 position = car_.position;
-        glm::vec2 orientation = car_.orientation;
-
-        float speed = car_.speed;
-        float wheelsRollAngle=car_.wheelsRollAngle;
-        float steeringAngle = car_.steeringAngle;
-        bool isHeadlightOn = car_.isHeadlightOn;
-        bool isBraking = car_.isBraking;
-        bool isLeftBlinkerActivated = car_.isLeftBlinkerActivated;
-        bool isRightBlinkerActivated = car_.isRightBlinkerActivated;
-        bool isBlinkerOn = car_.isBlinkerOn;
-
-        if (isBraking) {
-            if (speed ==0.f)
-            {
-                car_.isBraking = false;
-            } else {
-                speed /= 2;
-            }
-        }
-        
-        position.x += cos(steeringAngle)*speed;
-        position.z += sin(steeringAngle) * speed;
-        orientation.x += steeringAngle;
-
         car_.update(deltaTime_);
         car_.draw(projView);
         }

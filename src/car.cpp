@@ -30,7 +30,11 @@ void Car::update(float deltaTime)
         const float BRAKE_APPLIED_SPEED_THRESHOLD = 0.01f;
         const float BRAKING_FORCE = 4.f;
 
-        if (fabs(speed) < LOW_SPEED_THRESHOLD) speed = 0.f;
+        if (fabs(speed) < LOW_SPEED_THRESHOLD) 
+        {
+            speed = 0.f;
+            isBraking = false;
+        }
         else if (speed > BRAKE_APPLIED_SPEED_THRESHOLD) speed -= BRAKING_FORCE * deltaTime;
         else if (speed < -BRAKE_APPLIED_SPEED_THRESHOLD) speed += BRAKING_FORCE * deltaTime;
     }
