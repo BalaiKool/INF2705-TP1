@@ -504,6 +504,42 @@ struct App : public OpenGLApplication
         grass_.draw();
     }
 
+    void drawCar(glm::mat4& projView)
+    { 
+        glUseProgram(transformSP_);
+
+        //car Attributes
+        glm::vec3 position = car_.position;
+        glm::vec2 orientation = car_.orientation;
+
+        float speed = car_.speed;
+        float wheelsRollAngle=car_.wheelsRollAngle;
+        float steeringAngle = car_.steeringAngle;
+        bool isHeadlightOn = car_.isHeadlightOn;
+        bool isBraking = car_.isBraking;
+        bool isLeftBlinkerActivated = car_.isLeftBlinkerActivated;
+        bool isRightBlinkerActivated = car_.isRightBlinkerActivated;
+        bool isBlinkerOn = car_.isBlinkerOn;
+
+      
+        //Car Updates
+        if (isBraking) {
+            if (speed ==0.f)
+            {
+                car_.isBraking = false;
+            } else {
+                speed /= 2;
+            }
+        }
+        
+        position.x += cos(steeringAngle)*speed;
+        position.z += sin(steeringAngle) * speed;
+        orientation.x += steeringAngle;
+
+        //Car Drawing
+        car_.update(deltaTime_);
+        car_.draw(projView);
+        }
 
 
     glm::mat4 getViewMatrix()
@@ -539,7 +575,6 @@ struct App : public OpenGLApplication
         ImGui::End();
 
         updateCameraInput();
-        car_.update(deltaTime_);
 
         glm::mat4 proj = getPerspectiveProjectionMatrix();
         glm::mat4 view = getViewMatrix();
@@ -548,9 +583,7 @@ struct App : public OpenGLApplication
         drawGround(projView);
         drawTrees(projView);
         drawStreetlights(projView);
-
-        glUseProgram(transformSP_);
-        car_.draw(projView);
+        drawCar(projView);
     }
 
 
