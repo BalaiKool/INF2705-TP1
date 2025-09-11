@@ -257,14 +257,14 @@ struct App : public OpenGLApplication
         lightsPosition.clear();
         lightsPosition.reserve(N_STREETLIGHTS);
         //TODO: remove magic numbers
-        float z = -0.f; // Terrain va de -60 à 40 dans les z
+        float position = -0.f; // Terrain va de -60 à 40 dans les z
 
 
         for (unsigned int i = 0; i < N_STREETLIGHTS; i++)
         {
-            z += 100.f / N_STREETLIGHTS+(rand() % N_STREETLIGHTS);
-            z = std::fmod(z, 110.f); //loops back to the start if it goes too far;
-            lightsPosition.push_back(z - 60.f);
+            position += 110.f / N_STREETLIGHTS+(rand() % N_STREETLIGHTS);
+            position = std::fmod(position, 110.f); //loops back to the start if it goes too far;
+            lightsPosition.push_back(position - 60.f);
         }
     }
 
@@ -278,14 +278,14 @@ struct App : public OpenGLApplication
         treesOrientation.reserve(N_TREES);
         treesScale.reserve(N_TREES);
 
-        float z = 0.f; //TODO: same as above
+        float position = 0.f; //TODO: same as above
 
         for (unsigned int i = 0; i < N_TREES; i++)
         {
             //Position
-            z += 100.f / N_TREES + (rand() % N_TREES);
-            z = std::fmod(z,110.f); //loops back to the start if it goes too far
-            treesPosition.push_back(z - 60.f);
+            position += 100.f / N_TREES + (rand() % N_TREES);
+            position = std::fmod(position,110.f); //loops back to the start if it goes too far
+            treesPosition.push_back(position - 60.f);
         
             //Orientation
             float angleDeg = static_cast<float>(rand() % 360);
@@ -442,14 +442,16 @@ struct App : public OpenGLApplication
 
         for (unsigned int i = 0; i < N_STREETLIGHTS; i++)
         {
-            float z = lightsPosition[i];
-            float x = (i % 2 == 0 ? 3.f : -3.f);
+            float x = lightsPosition[i];
+            float z = (i % 2 == 0 ? 3.f : -3.f);
 
             glm::mat4 model(1.0f);
             model = glm::translate(model, glm::vec3(x, -0.15f, z));
 
-            if (i % 2 == 1) {
-                model = model * glm::rotate(glm::mat4(1.0f), glm::radians(180.f), glm::vec3(0.f, 1.f, 0.f));
+            if (i % 2 == 0) {
+                model = model * glm::rotate(glm::mat4(1.0f), glm::radians(-90.f), glm::vec3(0.f, 1.f, 0.f));
+            } else {
+                model = model * glm::rotate(glm::mat4(1.0f), glm::radians(90.f), glm::vec3(0.f, 1.f, 0.f));
             }
 
             glUniformMatrix4fv(mvpUniformLocation_, 1, GL_FALSE, glm::value_ptr(projView * model));
@@ -467,8 +469,8 @@ struct App : public OpenGLApplication
         for (unsigned int i = 0; i < N_TREES; i++)
         {
             glm::mat4 model(1.0f);
-            float z = treesPosition[i];
-            float x = (i % 2 == 0) ? 3.f : -3.f;
+            float x = treesPosition[i];
+            float z = (i % 2 == 0) ? 3.f : -3.f;
             model = glm::translate(model, glm::vec3(x, -0.15f, z));
 
             float angleRad = treesOrientation[i];
@@ -488,15 +490,15 @@ struct App : public OpenGLApplication
     void drawGround(glm::mat4& projView)
     {
         glUseProgram(transformSP_);
-
+        
         glm::mat4 model(1.0f);
-        model = glm::scale(model, glm::vec3(5.f, 1.f, 100.f));
+        model = glm::scale(model, glm::vec3(100.f, 1.f, 5.f));
         glUniformMatrix4fv(mvpUniformLocation_, 1, GL_FALSE, glm::value_ptr(projView * model));
         glUniform3fv(colorModUniformLocation_, 1, glm::value_ptr(glm::vec3(1.f, 1.f, 1.f)));
         street_.draw();
-
+        
         model = glm::translate(glm::mat4(1.0f), glm::vec3(0.f, -0.1f, 0.f));
-        model = glm::scale(model, glm::vec3(50.f, 1.f, 100.f));
+        model = glm::scale(model, glm::vec3(100.f, 1.f, 50.f));
         glUniformMatrix4fv(mvpUniformLocation_, 1, GL_FALSE, glm::value_ptr(projView * model));
         glUniform3fv(colorModUniformLocation_, 1, glm::value_ptr(glm::vec3(0.4f, 0.8f, 0.4f)));
         grass_.draw();
