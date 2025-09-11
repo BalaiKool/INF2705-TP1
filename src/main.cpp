@@ -43,9 +43,9 @@ struct App : public OpenGLApplication
     App()
         : nSide_(5)
         , oldNSide_(0)
-        , cameraPosition_(0.f, 0.f, 0.f)
-        , cameraOrientation_(0.f, 0.f)
-        , currentScene_(0)
+        , cameraPosition_(17.f, 9.f, 4.5f)
+        , cameraOrientation_(-.3, 1.25f)
+        , currentScene_(1)
         , isMouseMotionEnabled_(false)
     {
     }
