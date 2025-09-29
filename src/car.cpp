@@ -169,7 +169,7 @@ void Car::drawHeadlights(const mat4& carMVP)
     for (int i = 0; i < 4; ++i)
     {
         bool isFront = i < 2;
-        bool isLeft = i % 2 == 0;
+        bool isLeft = i % 2 == 1;
         drawHeadlight(carMVP, positions[i], isLeft, isFront);
     }
 }
