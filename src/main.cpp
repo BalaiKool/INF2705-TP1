@@ -41,11 +41,8 @@ const vec4 blue = { 0.f, 0.f, 1.f, 1.0f };
 struct App : public OpenGLApplication
 {
     App()
-        : nSide_(5)
-        , oldNSide_(0)
-        , cameraPosition_(17.f, 9.f, 4.5f)
+        : cameraPosition_(17.f, 9.f, 4.5f)
         , cameraOrientation_(-.3, 1.25f)
-        , currentScene_(0)
         , isMouseMotionEnabled_(false)
     {
     }
@@ -55,7 +52,6 @@ struct App : public OpenGLApplication
         // Le message expliquant les touches de clavier.
         setKeybindMessage(
             "ESC : quitter l'application." "\n"
-            "T : changer de scène." "\n"
             "W : déplacer la caméra vers l'avant." "\n"
             "S : déplacer la caméra vers l'arrière." "\n"
             "A : déplacer la caméra vers la gauche." "\n"
@@ -75,10 +71,7 @@ struct App : public OpenGLApplication
 
         loadShaderPrograms();
 
-        // Partie 1
-        initShapeData();
-
-        // Partie 2
+        // TP 1
         loadModels();
         car_.mvpUniformLocation = mvpUniformLocation_;
         car_.colorModUniformLocation = colorModUniformLocation_;
@@ -120,15 +113,7 @@ struct App : public OpenGLApplication
     {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        ImGui::Begin("Scene Parameters");
-        ImGui::Combo("Scene", &currentScene_, SCENE_NAMES, N_SCENE_NAMES);
-        ImGui::End();
-
-        switch (currentScene_)
-        {
-        case 0: sceneShape();  break;
-        case 1: sceneModels(); break;
-        }
+        sceneModels();
     }
 
     // Appelée lorsque la fenêtre se ferme.
@@ -162,9 +147,6 @@ struct App : public OpenGLApplication
                 window_.setMouseCursorGrabbed(false);
                 window_.setMouseCursorVisible(true);
             }
-            break;
-        case T:
-            currentScene_ = ++currentScene_ < N_SCENE_NAMES ? currentScene_ : 0;
             break;
         default: break;
         }
@@ -346,88 +328,6 @@ struct App : public OpenGLApplication
         std::cerr << "Warning: uColorMod not found in transform shader (transformSP_)." << std::endl;
 }
 
-    void generateNgon(unsigned int side)
-    {
-        const float RADIUS = 0.7f;
-        vertices_[0].position = glm::vec3(0.f, 0.f, 0.f);
-        vertices_[0].color = glm::vec3(1.f, 1.f, 1.f);
-
-        for (unsigned int i = 0; i < side; ++i)
-        {
-            float angle = (2.f * M_PI * i) / side + M_PI/2;
-            vertices_[i + 1].position = glm::vec3(
-                RADIUS * cos(angle),
-                RADIUS * sin(angle),
-                0.f
-            );
-
-            switch (i % 3) {
-            case 0: vertices_[i + 1].color = red; break;
-            case 1: vertices_[i + 1].color = green; break;
-            case 2: vertices_[i + 1].color = blue; break;
-            }
-        }
-
-        for (unsigned int i = 0; i < side; ++i)
-        {
-            elements_[i * 3 + 0] = 0;
-            elements_[i * 3 + 1] = i + 1;
-            elements_[i * 3 + 2] = (i + 1) % side + 1;
-        }
-    }
-
-
-
-
-    void initShapeData()
-    {
-        glGenVertexArrays(1, &vao_);
-        glGenBuffers(1, &vbo_);
-        glGenBuffers(1, &ebo_);
-
-        glBindVertexArray(vao_);
-
-        glBindBuffer(GL_ARRAY_BUFFER, vbo_);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(vertices_), nullptr, GL_DYNAMIC_DRAW);
-
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo_);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(elements_), nullptr, GL_DYNAMIC_DRAW);
-
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)0);
-        glEnableVertexAttribArray(0);
-
-        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, color));
-        glEnableVertexAttribArray(1);
-
-        glBindVertexArray(0);
-    }
-
-    void sceneShape()
-    {
-        ImGui::Begin("Scene Parameters");
-        ImGui::SliderInt("Sides", &nSide_, MIN_N_SIDES, MAX_N_SIDES);
-        ImGui::End();
-
-        bool hasNumberOfSidesChanged = nSide_ != oldNSide_;
-        if (hasNumberOfSidesChanged)
-        {
-            oldNSide_ = nSide_;
-            generateNgon(nSide_);
-
-            glBindBuffer(GL_ARRAY_BUFFER, vbo_);
-            glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(Vertex) * (nSide_ + 1), vertices_.data());
-
-            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo_);
-            glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, sizeof(GLuint) * nSide_ * 3, elements_.data());
-        }
-
-        glUseProgram(basicSP_);
-        glBindVertexArray(vao_);
-        glDrawElements(GL_TRIANGLES, nSide_ * 3, GL_UNSIGNED_INT, 0);
-        glBindVertexArray(0);
-    }
-
-
 
     void drawStreetlights(glm::mat4& projView)
     {
@@ -556,18 +456,9 @@ private:
     GLuint colorModUniformLocation_;
     GLuint mvpUniformLocation_;
 
-    // Partie 1
     GLuint vbo_, ebo_, vao_;
 
-    static constexpr unsigned int MIN_N_SIDES = 5;
-    static constexpr unsigned int MAX_N_SIDES = 12;
-
-    std::array<Vertex, MAX_N_SIDES + 1> vertices_;
-    std::array<GLuint, MAX_N_SIDES * 3> elements_;
-
-    int nSide_, oldNSide_;
-
-    // Partie 2
+    // TP1
     Model tree_;
     Model streetlight_;
     Model grass_;
