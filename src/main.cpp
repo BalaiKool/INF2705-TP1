@@ -44,6 +44,7 @@ struct App : public OpenGLApplication
         : cameraPosition_(17.f, 9.f, 4.5f)
         , cameraOrientation_(-.3, 1.25f)
         , isMouseMotionEnabled_(false)
+        , isQWERTY_(true)
     {
     }
 
@@ -52,11 +53,12 @@ struct App : public OpenGLApplication
         // Le message expliquant les touches de clavier.
         setKeybindMessage(
             "ESC : quitter l'application." "\n"
-            "W : déplacer la caméra vers l'avant." "\n"
-            "S : déplacer la caméra vers l'arrière." "\n"
-            "A : déplacer la caméra vers la gauche." "\n"
-            "D : déplacer la caméra vers la droite." "\n"
-            "Q : déplacer la caméra vers le bas." "\n"
+			"T : changer de clavier (QWERTY | AZERTY )" "\n"
+            "W | Z: déplacer la caméra vers l'avant." "\n"
+            "S | S: déplacer la caméra vers l'arrière." "\n"
+            "A | Q: déplacer la caméra vers la gauche." "\n"
+            "D | D: déplacer la caméra vers la droite." "\n"
+            "Q | A: déplacer la caméra vers le bas." "\n"
             "E : déplacer la caméra vers le haut." "\n"
             "Flèches : tourner la caméra." "\n"
             "Souris : tourner la caméra" "\n"
@@ -148,6 +150,8 @@ struct App : public OpenGLApplication
                 window_.setMouseCursorVisible(true);
             }
             break;
+        case T:
+            isQWERTY_ = !isQWERTY_; break;
         default: break;
         }
     }
@@ -200,20 +204,38 @@ struct App : public OpenGLApplication
         // Keyboard input
         glm::vec3 positionOffset = glm::vec3(0.0);
         const float SPEED = 10.f;
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::W))
-            positionOffset.z -= SPEED;
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::S))
-            positionOffset.z += SPEED;
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::A))
-            positionOffset.x -= SPEED;
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::D))
-            positionOffset.x += SPEED;
+        if (isQWERTY_)
+        {
+            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::W))
+                positionOffset.z -= SPEED;
+            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::S))
+                positionOffset.z += SPEED;
+            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::A))
+                positionOffset.x -= SPEED;
+            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::D))
+                positionOffset.x += SPEED;
 
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Q))
-            positionOffset.y -= SPEED;
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::E))
-            positionOffset.y += SPEED;
+            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Q))
+                positionOffset.y -= SPEED;
+            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::E))
+                positionOffset.y += SPEED;
+        }
+        else {
 
+            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Z))
+                positionOffset.z -= SPEED;
+            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::S))
+                positionOffset.z += SPEED;
+            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Q))
+                positionOffset.x -= SPEED;
+            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::D))
+                positionOffset.x += SPEED;
+
+            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::A))
+                positionOffset.y -= SPEED;
+            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::E))
+                positionOffset.y += SPEED;
+        }
         positionOffset = glm::rotate(glm::mat4(1.0f), cameraOrientation_.y, glm::vec3(0.0, 1.0, 0.0)) * glm::vec4(positionOffset, 1);
         cameraPosition_ += positionOffset * glm::vec3(deltaTime_);
     }
@@ -487,6 +509,7 @@ private:
     int currentScene_;
 
     bool isMouseMotionEnabled_;
+    bool isQWERTY_;
 };
 
 
