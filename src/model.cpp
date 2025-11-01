@@ -6,10 +6,52 @@
 
 using namespace gl;
 
+
+// TODO: Nouvelle implémentation de Model::load() pour le chargement des nouveaux
+//       attributs. À ajouter à votre classe actuelle.
+
+// TODO: Nouvelle définition de Model::load() à utiliser pour le sol et la route.
+//       À ajouter à votre classe actuelle.
+
+
 struct PVertex {
     glm::vec3 pos;
     glm::vec3 col;
 };
+
+
+struct PositionAttribute
+{
+    float x, y, z;
+};
+
+struct ColorUCharAttribute
+{
+    unsigned char r, g, b;
+};
+
+struct NormalAttribute
+{
+    float x, y, z;
+};
+
+struct TexCoordAttribute
+{
+    float s, t;
+};
+
+struct VertexModel
+{
+    PositionAttribute pos;
+    ColorUCharAttribute color;
+    NormalAttribute normal;
+    TexCoordAttribute texCoord;
+};
+
+const GLuint VERTEX_POSITION_INDEX = 0;
+const GLuint VERTEX_COLOR_INDEX = 1;
+const GLuint VERTEX_NORMAL_INDEX = 2;
+const GLuint VERTEX_TEXCOORDS_INDEX = 3;
 
 void Model::load(const char* path)
 {
@@ -20,68 +62,158 @@ void Model::load(const char* path)
     std::vector<float> positionY = vertex.getProperty<float>("y");
     std::vector<float> positionZ = vertex.getProperty<float>("z");
 
-    std::vector<unsigned char> colorRed = vertex.getProperty<unsigned char>("red");
-    std::vector<unsigned char> colorGreen = vertex.getProperty<unsigned char>("green");
-    std::vector<unsigned char> colorBlue = vertex.getProperty<unsigned char>("blue");
+    std::vector<float> normalX, normalY, normalZ;
+    try
+    {
+        normalX = vertex.getProperty<float>("nx");
+        normalY = vertex.getProperty<float>("ny");
+        normalZ = vertex.getProperty<float>("nz");
+    }
+    catch (std::runtime_error& e)
+    {
+        std::cout << "No normal attribute for model \"" << path << "\"" << std::endl;
+    }
+
+    std::vector<unsigned char> colorRed, colorGreen, colorBlue;
+    try
+    {
+        colorRed = vertex.getProperty<unsigned char>("red");
+        colorGreen = vertex.getProperty<unsigned char>("green");
+        colorBlue = vertex.getProperty<unsigned char>("blue");
+    }
+    catch (std::runtime_error& e)
+    {
+        std::cout << "No color attribute for model \"" << path << "\"" << std::endl;
+    }
+
+    std::vector<float> texCoordsX, texCoordsY;
+    try
+    {
+        texCoordsX = vertex.getProperty<float>("s");
+        texCoordsY = vertex.getProperty<float>("t");
+    }
+    catch (std::runtime_error& e)
+    {
+        std::cout << "No texture coordinate attribute for model \"" << path << "\"" << std::endl;
+    }
 
     std::vector<std::vector<unsigned int>> facesIndices = plyIn.getFaceIndices<unsigned int>();
 
-    std::vector<PVertex> vtx;
-    vtx.reserve(positionX.size());
-    for (size_t i = 0; i < positionX.size(); ++i)
+    std::vector<VertexModel> vPos(positionX.size());
+    for (size_t i = 0; i < vPos.size(); i++)
     {
-        PVertex pv;
-        pv.pos = glm::vec3(positionX[i], positionY[i], positionZ[i]);
-        if (i < colorRed.size() && i < colorGreen.size() && i < colorBlue.size()) {
-            pv.col = glm::vec3(colorRed[i] / 255.0f, colorGreen[i] / 255.0f, colorBlue[i] / 255.0f);
+        vPos[i] = { 0 };
+
+        vPos[i].pos.x = positionX[i];
+        vPos[i].pos.y = positionY[i];
+        vPos[i].pos.z = positionZ[i];
+
+        if (!colorRed.empty())
+        {
+            vPos[i].color.r = colorRed[i];
+            vPos[i].color.g = colorGreen[i];
+            vPos[i].color.b = colorBlue[i];
         }
-        else {
-            pv.col = glm::vec3(0.8f, 0.8f, 0.8f);
+
+        if (!normalX.empty())
+        {
+            vPos[i].normal.x = normalX[i];
+            vPos[i].normal.y = normalY[i];
+            vPos[i].normal.z = normalZ[i];
         }
-        vtx.push_back(pv);
+
+        if (!texCoordsX.empty())
+        {
+            vPos[i].texCoord.s = texCoordsX[i];
+            vPos[i].texCoord.t = texCoordsY[i];
+        }
     }
 
-    std::vector<GLuint> idx;
-    idx.reserve(facesIndices.size() * 3);
-    for (auto& face : facesIndices)
+    std::vector<unsigned int> elementsData(facesIndices.size() * 3);
+    for (size_t i = 0; i < facesIndices.size(); i++)
     {
-        if (face.size() == 3) {
-            idx.push_back(static_cast<GLuint>(face[0]));
-            idx.push_back(static_cast<GLuint>(face[1]));
-            idx.push_back(static_cast<GLuint>(face[2]));
+        for (size_t j = 0; j < facesIndices[i].size(); j++)
+        {
+            elementsData[3 * i + j] = facesIndices[i][j];
         }
     }
-    count_ = static_cast<GLsizei>(idx.size());
 
-    glm::vec3 minV(FLT_MAX), maxV(-FLT_MAX);
-    for (const auto& pv : vtx) {
-        minV = glm::min(minV, pv.pos);
-        maxV = glm::max(maxV, pv.pos);
-    }
-    center_ = 0.5f * (minV + maxV);
+    glGenBuffers(1, &vbo_);
+    glBindBuffer(GL_ARRAY_BUFFER, vbo_);
+    glBufferData(GL_ARRAY_BUFFER, vPos.size() * sizeof(VertexModel), &vPos[0], GL_STATIC_DRAW);
+
+    glGenBuffers(1, &ebo_);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo_);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, elementsData.size() * sizeof(unsigned int), &elementsData[0], GL_STATIC_DRAW);
 
     glGenVertexArrays(1, &vao_);
-    glGenBuffers(1, &vbo_);
-    glGenBuffers(1, &ebo_);
-
     glBindVertexArray(vao_);
 
     glBindBuffer(GL_ARRAY_BUFFER, vbo_);
-    glBufferData(GL_ARRAY_BUFFER, vtx.size() * sizeof(PVertex), vtx.data(), GL_STATIC_DRAW);
-
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo_);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, idx.size() * sizeof(GLuint), idx.data(), GL_STATIC_DRAW);
 
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(PVertex), (void*)offsetof(PVertex, pos));
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(PVertex), (void*)offsetof(PVertex, col));
+    glEnableVertexAttribArray(VERTEX_POSITION_INDEX);
+    glVertexAttribPointer(VERTEX_POSITION_INDEX, 3, GL_FLOAT, GL_FALSE, sizeof(VertexModel), (GLvoid*)(offsetof(VertexModel, pos)));
+
+    if (!colorRed.empty())
+    {
+        glEnableVertexAttribArray(VERTEX_COLOR_INDEX);
+        glVertexAttribPointer(VERTEX_COLOR_INDEX, 3, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(VertexModel), (GLvoid*)(offsetof(VertexModel, color)));
+    }
+    else
+        glDisableVertexAttribArray(VERTEX_COLOR_INDEX);
+
+    if (!normalX.empty())
+    {
+        glEnableVertexAttribArray(VERTEX_NORMAL_INDEX);
+        glVertexAttribPointer(VERTEX_NORMAL_INDEX, 3, GL_FLOAT, GL_FALSE, sizeof(VertexModel), (GLvoid*)(offsetof(VertexModel, normal)));
+    }
+    else
+        glDisableVertexAttribArray(VERTEX_NORMAL_INDEX);
+
+    if (!texCoordsX.empty())
+    {
+        glEnableVertexAttribArray(VERTEX_TEXCOORDS_INDEX);
+        glVertexAttribPointer(VERTEX_TEXCOORDS_INDEX, 2, GL_FLOAT, GL_FALSE, sizeof(VertexModel), (GLvoid*)(offsetof(VertexModel, texCoord)));
+    }
+    else
+        glDisableVertexAttribArray(VERTEX_TEXCOORDS_INDEX);
 
     glBindVertexArray(0);
 
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+    count_ = elementsData.size();
 }
+
+void Model::load(float* vertices, size_t verticesSize, unsigned int* elements, size_t elementsSize)
+{
+    glGenBuffers(1, &vbo_);
+    glBindBuffer(GL_ARRAY_BUFFER, vbo_);
+    glBufferData(GL_ARRAY_BUFFER, verticesSize, vertices, GL_STATIC_DRAW);
+
+    glGenBuffers(1, &ebo_);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo_);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, elementsSize, elements, GL_STATIC_DRAW);
+
+    glGenVertexArrays(1, &vao_);
+    glBindVertexArray(vao_);
+
+    glBindBuffer(GL_ARRAY_BUFFER, vbo_);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo_);
+
+    glEnableVertexAttribArray(VERTEX_POSITION_INDEX);
+    glVertexAttribPointer(VERTEX_POSITION_INDEX, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (GLvoid*)(0));
+
+    glDisableVertexAttribArray(VERTEX_COLOR_INDEX);
+    glDisableVertexAttribArray(VERTEX_NORMAL_INDEX);
+
+    glEnableVertexAttribArray(VERTEX_TEXCOORDS_INDEX);
+    glVertexAttribPointer(VERTEX_TEXCOORDS_INDEX, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (GLvoid*)(3 * sizeof(float)));
+
+    glBindVertexArray(0);
+
+    count_ = elementsSize / sizeof(unsigned int);
+}
+
 
 Model::~Model()
 {

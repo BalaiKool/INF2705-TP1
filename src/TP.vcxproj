@@ -170,6 +170,10 @@
     <ClCompile Include="car.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="model.cpp" />
+    <ClCompile Include="shaders.cpp" />
+    <ClCompile Include="shader_program.cpp" />
+    <ClCompile Include="textures.cpp" />
+    <ClCompile Include="uniform_buffer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="CMakeLists.txt" />

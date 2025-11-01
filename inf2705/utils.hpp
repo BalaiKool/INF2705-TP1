@@ -11,6 +11,7 @@
 #include <string>
 #include <type_traits>
 #include <random>
+#include <chrono>
 
 #include <glbinding/gl/enum.h>
 

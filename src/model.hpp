@@ -8,7 +8,9 @@ using namespace gl;
 class Model
 {
 public:
-    void load(const char* path);
+    void load(const char* path);   
+    void load(float* vertices, size_t verticesSize, unsigned int* elements, size_t elementsSize);
+
     
     ~Model();
     
