@@ -58,6 +58,8 @@ public:
     
     GLuint globalAmbientULoc;
 
+    inline void use() { glUseProgram(id_); }
+
 public:
     void setMatrices(glm::mat4& mvp, glm::mat4& view, glm::mat4& model);
 

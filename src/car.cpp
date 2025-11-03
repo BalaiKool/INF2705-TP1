@@ -108,31 +108,26 @@ void Car::update(float deltaTime)
 //       Partie 2: Ajouter le calcul de stencil pour le chassi et les roues pour avoir
 //                 le contour de la voiture.
 
-void Car::draw(glm::mat4& projView)
+void Car::draw(glm::mat4& projView, glm::mat4& view)
 {
+    celShadingShader->use();
+
     mat4 carTransform = translate(mat4(1.0f), position);
     carTransform = rotate(carTransform, orientation.y, vec3(0.f, 1.f, 0.f));
     mat4 carMVP = projView * carTransform;
 
-    drawFrame(carMVP);
+    drawFrame(projView, view, carTransform);
     drawWheels(carMVP);
     drawHeadlights(carMVP);
 }
 
-//void Car::draw(glm::mat4& projView, glm::mat4& view)
-//{
-//    // Code de solution partielle, à ignorer si votre voiture est décente.
-//    glm::mat4 mvp = projView * carModel;
-//    glm::mat4 mvpFrame = glm::translate(mvp, glm::vec3(0.0f, 0.25f, 0.0f));
-//    // glUniformMatrix4fv(mvpUniformLocation, 1, GL_FALSE, &mvp[0][0]); // Avec une bonne location
-//    frame_.draw();
-//}
-
-void Car::drawFrame(const mat4& carMVP)
+void Car::drawFrame(glm::mat4& projView, glm::mat4& view, const mat4& carTransform)
 {
     mat4 model = translate(mat4(1.0f), vec3(0.f, 0.25f, 0.f));
-    mat4 mvp = carMVP * model;
-    glUniformMatrix4fv(mvpUniformLocation, 1, GL_FALSE, value_ptr(mvp));
+    mat4 worldModel = carTransform * model;
+    mat4 mvp = projView * worldModel;
+
+    celShadingShader->setMatrices(mvp, view, worldModel);
     frame_.draw();
 }
 
