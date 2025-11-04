@@ -40,9 +40,8 @@ void Sky::getAllUniformLocations()
 
 void CelShading::load()
 {
-    // To CHANGE Back
-    const char* VERTEX_SRC_PATH = "./shaders/basic.vs.glsl";    // "./shaders/phong.vs.glsl";
-    const char* FRAGMENT_SRC_PATH = "./shaders/basic.fs.glsl";  // "./shaders/phong.fs.glsl";
+    const char* VERTEX_SRC_PATH = "./shaders/phong.vs.glsl";
+    const char* FRAGMENT_SRC_PATH = "./shaders/phong.fs.glsl";
 
     std::cout << "Loading CelShading shader..." << std::endl;
     name_ = "CelShading";
@@ -55,13 +54,13 @@ void CelShading::load()
 void CelShading::getAllUniformLocations()
 {
     mvpULoc = glGetUniformLocation(id_, "mvp");
-    //viewULoc = glGetUniformLocation(id_, "view");
-    //modelViewULoc = glGetUniformLocation(id_, "modelView");
-    //normalULoc = glGetUniformLocation(id_, "normalMatrix");
-    //
-    //nSpotLightsULoc = glGetUniformLocation(id_, "nSpotLights");
-    //
-    //globalAmbientULoc = glGetUniformLocation(id_, "globalAmbient");
+    viewULoc = glGetUniformLocation(id_, "view");
+    modelViewULoc = glGetUniformLocation(id_, "modelView");
+    normalULoc = glGetUniformLocation(id_, "normalMatrix");
+    
+    nSpotLightsULoc = glGetUniformLocation(id_, "nSpotLights");
+    
+    globalAmbientULoc = glGetUniformLocation(id_, "globalAmbient");
 }
 
 void CelShading::assignAllUniformBlockIndexes()
@@ -73,11 +72,12 @@ void CelShading::assignAllUniformBlockIndexes()
 
 void CelShading::setMatrices(glm::mat4& mvp, glm::mat4& view, glm::mat4& model)
 {
+    //use();
     glm::mat4 modelView = view * model;
     
-    //glUniformMatrix4fv(viewULoc, 1, GL_FALSE, &view[0][0]);
+    glUniformMatrix4fv(viewULoc, 1, GL_FALSE, &view[0][0]);
     glUniformMatrix4fv(mvpULoc, 1, GL_FALSE, &mvp[0][0]);
-    //glUniformMatrix4fv(modelViewULoc, 1, GL_FALSE, &modelView[0][0]);
-    //glUniformMatrix3fv(normalULoc, 1, GL_TRUE, glm::value_ptr(glm::inverse(glm::mat3(modelView))));
+    glUniformMatrix4fv(modelViewULoc, 1, GL_FALSE, &modelView[0][0]);
+    glUniformMatrix3fv(normalULoc, 1, GL_TRUE, glm::value_ptr(glm::inverse(glm::mat3(modelView))));
 }
 

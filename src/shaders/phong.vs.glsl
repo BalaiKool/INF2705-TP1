@@ -5,7 +5,7 @@ layout (location = 1) in vec3 color;
 layout (location = 2) in vec3 normal;
 layout (location = 3) in vec2 texCoords;
 
-#define MAX_SPOT_LIGHTS 16
+#define MAX_SPOT_LIGHTS 8
 #define MAX_POINT_LIGHTS 4
 
 out ATTRIBS_VS_OUT
@@ -22,8 +22,6 @@ out LIGHTS_VS_OUT
     
     vec3 spotLightsDir[MAX_SPOT_LIGHTS];
     vec3 spotLightsSpotDir[MAX_SPOT_LIGHTS];
-    
-    vec3 pointLightsDir[MAX_POINT_LIGHTS];
 } lightsOut;
 
 uniform mat4 mvp;
@@ -80,8 +78,20 @@ void main()
     
     // TODO: Écriture des attributs de sortie
     //       Si la normale est nul, lui donner une valeur qui pointe vers le haut.
+    attribsOut.color=color;
+    attribsOut.texCoords=texCoords;
+
+    vec3 n = normalMatrix * normal;
+    if (length(n) < 0.0001)
+        n = vec3(0.0, 1.0, 0.0); // si normale nulle, vers le haut
+    attribsOut.normal = normalize(n);
+
 
     // Lights
+    vec4 posView = modelView * vec4(position, 1.0);
+    lightsOut.obsPos = posView.xyz;
+
+    lightsOut.dirLightDir = normalize(mat3(view) * (-dirLight.direction));
 
     // TODO: Écriture des propriétés de lumières en sortie    
     for(int i = 0; i < nSpotLights; i++)
@@ -89,4 +99,5 @@ void main()
         // ...
     }
     
+    gl_Position = mvp * vec4(position, 1.0);
 }

@@ -1,6 +1,6 @@
 #version 330 core
 
-#define MAX_SPOT_LIGHTS 16
+#define MAX_SPOT_LIGHTS 8
 #define MAX_POINT_LIGHTS 4
 
 in ATTRIBS_VS_OUT
@@ -17,8 +17,6 @@ in LIGHTS_VS_OUT
     
     vec3 spotLightsDir[MAX_SPOT_LIGHTS];
     vec3 spotLightsSpotDir[MAX_SPOT_LIGHTS];
-    
-    vec3 pointLightsDir[MAX_POINT_LIGHTS];
 } lightsIn;
 
 
@@ -89,6 +87,13 @@ void main()
     
     // TODO: Seulement la lumière directionnel à l'effet de cel-shading, sur la composante diffuse et spéculaire
     const float LEVELS = 4;
+    vec3 texColor = texture(diffuseSampler, attribsIn.texCoords).rgb;
+
+    vec3 ambient = vec3(0.3) + globalAmbient * mat.ambient + dirLight.ambient * mat.ambient;
+    vec3 diffuse = dirLight.diffuse * mat.diffuse;
+    vec3 specular = dirLight.specular * mat.specular;
+
+
         
     // Spot light
     
@@ -102,7 +107,8 @@ void main()
         // Le facteur impacte la composante diffuse et spéculaire.
     }
 
-    vec3 color = vec3(0);
+    
+    vec3 color = mat.emission + ambient + (diffuse + specular) * texColor;
     //color += normal/2.0 + vec3(0.5); // DEBUG: Show normals
     FragColor = vec4(color, 1.0);
 }
