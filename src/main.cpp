@@ -176,26 +176,6 @@ struct App : public OpenGLApplication
         edgeEffectShader_.create();
         skyShader_.create(); 
 
-
-        grassTexture_.load("../textures/grass.jpg");
-        streetTexture_.load("../textures/street.jpg");
-
-        grassTexture_.use();
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        glGenerateMipmap(GL_TEXTURE_2D);
-
-        streetTexture_.use();
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_LOD_BIAS, -1.0f);
-        glGenerateMipmap(GL_TEXTURE_2D);
-
-
         // TODO: À ajouter.
         car_.celShadingShader = &celShadingShader_;
         car_.edgeEffectShader = &edgeEffectShader_;
@@ -238,6 +218,7 @@ struct App : public OpenGLApplication
 
         std::cout << "Loading models" << std::endl;
         loadModels();
+        loadTextures();
         initStaticModelMatrices();
 
         // Partie 3
@@ -468,7 +449,11 @@ struct App : public OpenGLApplication
 
             if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::A))
                 positionOffset.y -= SPEED;
+            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::LControl))
+                positionOffset.y -= SPEED;
             if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::E))
+                positionOffset.y += SPEED;
+            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::LShift))
                 positionOffset.y += SPEED;
         }
         positionOffset = glm::rotate(glm::mat4(1.0f), cameraOrientation_.y, glm::vec3(0.0, 1.0, 0.0)) * glm::vec4(positionOffset, 1);
@@ -477,7 +462,6 @@ struct App : public OpenGLApplication
 
     void loadModels()
     {
-        std::cout << "Loading models..." << std::endl;
         car_.loadModels();
         tree_.load("../models/tree.ply");
         streetlight_.load("../models/streetlight.ply");
@@ -486,12 +470,21 @@ struct App : public OpenGLApplication
 
         // TODO: Ajouter le chargement du sol et de la route avec la nouvelle méthode load
         //       des modèles. Voir "model_data.hpp".
-        std::cout << "Loading grass..." << std::endl;
         grass_.load(ground, sizeof(ground), planeElements, sizeof(planeElements)); 
-        std::cout << "Loading street..." << std::endl;
         street_.load(street, sizeof(street), planeElements, sizeof(planeElements));
-        std::cout << "Models loaded!" << std::endl;
     }
+
+    void loadTextures()
+    {
+        carTexture_.load("../textures/car.png");
+        treeTexture_.load("../textures/tree.jpg");
+        streetlightTexture_.load("../textures/streetlight.jpg");
+        streetlightLightTexture_.load("../textures/streetlight_light.png");
+
+        grassTexture_.load("../textures/grass.jpg");
+        streetTexture_.load("../textures/street.jpg");
+    }
+
 
     void initStaticModelMatrices()
     {
@@ -552,6 +545,11 @@ struct App : public OpenGLApplication
     void drawStreetlights(glm::mat4& projView)
     {
         glm::mat4 view = getViewMatrix();
+        streetlightTexture_.use();
+        streetlightTexture_.setWrap(GL_CLAMP_TO_EDGE);
+        streetlightTexture_.enableMipmap();
+        streetlightTexture_.setFiltering(GL_NEAREST_MIPMAP_NEAREST);
+        //streetlightTexture_.setFiltering(GL_NEAREST);
 
         glEnable(GL_STENCIL_TEST);
         glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
@@ -583,6 +581,7 @@ struct App : public OpenGLApplication
 
             celShadingShader_.setMatrices(mvp, view, model);
             streetlight_.draw();
+            
         }
 
         // Draw outlines using stencil
@@ -634,6 +633,12 @@ struct App : public OpenGLApplication
 
         celShadingShader_.use();
         setMaterial(grassMat);
+        treeTexture_.use();
+        treeTexture_.setWrap(GL_REPEAT);
+        treeTexture_.enableMipmap();
+        treeTexture_.setFiltering(GL_NEAREST_MIPMAP_NEAREST);
+        //treeTexture_.setFiltering(GL_NEAREST);
+
 
         for (unsigned int i = 0; i < N_TREES; i++)
         {
@@ -686,12 +691,16 @@ struct App : public OpenGLApplication
     // TODO: À modifier, ajouter les textures
     void drawGround(const glm::mat4& projView)
     {
+
         celShadingShader_.use();
         glm::mat4 view = getViewMatrix();
 
         setMaterial(streetMat);
         // TODO: Dessin de la route.
         streetTexture_.use();
+        streetTexture_.setWrap(GL_REPEAT);
+        streetTexture_.enableMipmap();
+        streetTexture_.setFiltering(GL_NEAREST_MIPMAP_NEAREST);
         glm::mat4 model(1.0f);
         model = glm::scale(model, glm::vec3(100.f, 1.f, 5.f));
 
@@ -703,6 +712,9 @@ struct App : public OpenGLApplication
         setMaterial(grassMat);
         // TODO: Dessin du sol.
         grassTexture_.use();
+        grassTexture_.setWrap(GL_REPEAT);
+        grassTexture_.enableMipmap();
+        grassTexture_.setFiltering(GL_NEAREST_MIPMAP_NEAREST);
         model = glm::translate(glm::mat4(1.0f), glm::vec3(0.f, -0.1f, 0.f));
         model = glm::scale(model, glm::vec3(100.f, 1.f, 50.f));
         mvp = projView * model;
@@ -712,6 +724,12 @@ struct App : public OpenGLApplication
 
     void drawCar(glm::mat4& projView, glm::mat4& view)
     { 
+        setMaterial(defaultMat);
+        carTexture_.use();
+        carTexture_.setWrap(GL_REPEAT);
+        carTexture_.enableMipmap();
+        carTexture_.setFiltering(GL_NEAREST_MIPMAP_NEAREST);
+
         car_.update(deltaTime_);
         car_.draw(projView, view);
         }
@@ -902,29 +920,31 @@ struct App : public OpenGLApplication
         // TODO: Dessin des éléments
         // Penser à votre ordre de dessin, les todos sont volontairement mélangé ici.
 
-        CHECK_GL_ERROR; 
-        drawGround(projView);
+        // TODO: Dessin de l'automobile
+        drawCar(projView, view);
+        CHECK_GL_ERROR;
+
 
         setMaterial(windowMat);
         // TODO: Dessin des fenêtres
 
+        setMaterial(grassMat);
+        // TODO: Dessin des arbres. Oui, ils utilisent le même matériel que le sol.
+        drawTrees(projView);
         CHECK_GL_ERROR;
-        setMaterial(defaultMat);
-        // TODO: Dessin de l'automobile
-        drawCar(projView, view);
+
+        drawGround(projView);
+        CHECK_GL_ERROR;
 
         // TODO: Dessin du skybox
 
         CHECK_GL_ERROR; // This one
-        setMaterial(grassMat);
-        // TODO: Dessin des arbres. Oui, ils utilisent le même matériel que le sol.
-        drawTrees(projView);
 
-        CHECK_GL_ERROR; 
         setMaterial(streetlightMat);
         // TODO: Dessin des lampadaires.
         drawStreetlights(projView);
         CHECK_GL_ERROR;
+
     }
 
 private:
