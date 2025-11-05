@@ -110,16 +110,45 @@ void Car::update(float deltaTime)
 
 void Car::draw(glm::mat4& projView, glm::mat4& view)
 {
+    glEnable(GL_STENCIL_TEST);
+    glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+    glStencilFunc(GL_ALWAYS, 1, 0xFF);
+    glStencilMask(0xFF);
+    glEnable(GL_DEPTH_TEST);
+    glDepthMask(GL_TRUE);
+
     celShadingShader->use();
 
-    mat4 carTransform = translate(mat4(1.0f), position);
-    carTransform = rotate(carTransform, orientation.y, vec3(0.f, 1.f, 0.f));
-    mat4 carMVP = projView * carTransform;
+    glm::mat4 carTransform = glm::translate(glm::mat4(1.0f), position);
+    carTransform = glm::rotate(carTransform, orientation.y, glm::vec3(0.f, 1.f, 0.f));
+    glm::mat4 carMVP = projView * carTransform;
 
     drawFrame(projView, view, carTransform);
     drawWheels(carMVP);
     drawHeadlights(carMVP);
+
+    glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
+    glStencilMask(0x00);
+    glDisable(GL_DEPTH_TEST);
+
+    edgeEffectShader->use();
+
+    const float outlineScale = 1.03f;
+    const float outlineHeightOffset = 0.22f;
+    glm::mat4 scaledCarTransform = glm::translate(carTransform, glm::vec3(0.f, outlineHeightOffset, 0.f));
+    scaledCarTransform = glm::scale(scaledCarTransform, glm::vec3(outlineScale));
+
+    glm::mat4 scaledMVP = projView * scaledCarTransform;
+    edgeEffectShader->setMatrices(scaledMVP, view, scaledCarTransform);
+    frame_.draw();
+    drawWheels(scaledMVP);
+
+    glStencilMask(0xFF);
+    glStencilFunc(GL_ALWAYS, 0, 0xFF);
+    glEnable(GL_DEPTH_TEST);
+    glDisable(GL_STENCIL_TEST);
 }
+
 
 void Car::drawFrame(glm::mat4& projView, glm::mat4& view, const mat4& carTransform)
 {

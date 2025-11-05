@@ -17,9 +17,17 @@ void EdgeEffect::load()
 
 void EdgeEffect::getAllUniformLocations()
 {
-    // TODO: Initialiser les valeurs de uniform location en attributs
+    mvpULoc = glGetUniformLocation(id_, "mvp");
+    viewULoc = glGetUniformLocation(id_, "view");
+    modelULoc = glGetUniformLocation(id_, "model");
 }
 
+void EdgeEffect::setMatrices(glm::mat4& mvp, glm::mat4& view, glm::mat4& model)
+{
+    glUniformMatrix4fv(mvpULoc, 1, GL_FALSE, glm::value_ptr(mvp));
+    glUniformMatrix4fv(viewULoc, 1, GL_FALSE, glm::value_ptr(view));
+    glUniformMatrix4fv(modelULoc, 1, GL_FALSE, glm::value_ptr(model));
+}
 
 void Sky::load()
 {

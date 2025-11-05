@@ -41,9 +41,9 @@ struct Vertex
 
 struct Material
 {
-    glm::vec4 emission; // vec3, but padded
-    glm::vec4 ambient;  // vec3, but padded
-    glm::vec4 diffuse;  // vec3, but padded
+    glm::vec4 emission;
+    glm::vec4 ambient;
+    glm::vec4 diffuse;
     glm::vec3 specular;
     GLfloat shininess;
 };
@@ -165,6 +165,7 @@ struct App : public OpenGLApplication
         glClearColor(0.8f, 0.8f, 0.8f, 1.0f);
         glEnable(GL_DEPTH_TEST);
         glEnable(GL_CULL_FACE);
+        glEnable(GL_STENCIL_TEST);
 
         // Partie 1
 
@@ -179,7 +180,6 @@ struct App : public OpenGLApplication
         grassTexture_.load("../textures/grass.jpg");
         streetTexture_.load("../textures/street.jpg");
 
-        // Set texture parameters for grass (repeating + mipmap)
         grassTexture_.use();
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
@@ -187,7 +187,6 @@ struct App : public OpenGLApplication
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         glGenerateMipmap(GL_TEXTURE_2D);
 
-        // Set texture parameters for street (repeating + mipmap)
         streetTexture_.use();
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
@@ -333,7 +332,7 @@ struct App : public OpenGLApplication
     {
         CHECK_GL_ERROR;
         // TODO: Partie 2: Ajouter le nettoyage du tampon de stencil
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
         ImGui::Begin("Scene Parameters");
 
@@ -552,8 +551,46 @@ struct App : public OpenGLApplication
     //       votre code pour faire le dessin des deux parties.
     void drawStreetlights(glm::mat4& projView)
     {
-        celShadingShader_.use();
         glm::mat4 view = getViewMatrix();
+
+        glEnable(GL_STENCIL_TEST);
+        glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+        glStencilFunc(GL_ALWAYS, 1, 0xFF);
+        glStencilMask(0xFF);
+        glClear(GL_STENCIL_BUFFER_BIT);
+
+        celShadingShader_.use();
+
+        // Draw streetlights normally
+        for (unsigned int i = 0; i < N_STREETLIGHTS; i++)
+        {
+            float x = lightsPosition[i];
+            float z = (i % 2 == 0 ? 3.f : -3.f);
+
+            glm::mat4 model(1.0f);
+            model = glm::translate(model, glm::vec3(x, -0.15f, z));
+            if (i % 2 == 0)
+                model = glm::rotate(model, glm::radians(-90.f), glm::vec3(0.f, 1.f, 0.f));
+            else
+                model = glm::rotate(model, glm::radians(90.f), glm::vec3(0.f, 1.f, 0.f));
+
+            glm::mat4 mvp = projView * model;
+
+            if (!isDay_)
+                setMaterial(streetlightLightMat);
+            else
+                setMaterial(streetlightMat);
+
+            celShadingShader_.setMatrices(mvp, view, model);
+            streetlight_.draw();
+        }
+
+        // Draw outlines using stencil
+        glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
+        glStencilMask(0x00);
+        glEnable(GL_DEPTH_TEST);
+
+        edgeEffectShader_.use();
 
         for (unsigned int i = 0; i < N_STREETLIGHTS; i++)
         {
@@ -562,38 +599,41 @@ struct App : public OpenGLApplication
 
             glm::mat4 model(1.0f);
             model = glm::translate(model, glm::vec3(x, -0.15f, z));
-
-            if (i % 2 == 0) {
-                model = model * glm::rotate(glm::mat4(1.0f), glm::radians(-90.f), glm::vec3(0.f, 1.f, 0.f));
-            } else {
-                model = model * glm::rotate(glm::mat4(1.0f), glm::radians(90.f), glm::vec3(0.f, 1.f, 0.f));
-            }
-
-            glm::mat4 mvp = projView * model;
-
-            setMaterial(streetlightMat);
-            celShadingShader_.setMatrices(mvp, view, model);
-            streetlight_.draw();
-
-            if (!isDay_)
-                setMaterial(streetlightLightMat);
+            if (i % 2 == 0)
+                model = glm::rotate(model, glm::radians(-90.f), glm::vec3(0.f, 1.f, 0.f));
             else
-                setMaterial(streetlightMat);
-            // TODO: Dessin du mesh de la lumière.
+                model = glm::rotate(model, glm::radians(90.f), glm::vec3(0.f, 1.f, 0.f));
 
-            setMaterial(streetlightMat);
-            // TODO: Dessin du mesh du lampadaire.
+            glm::vec3 center = streetlight_.center_;
+            glm::mat4 scaledModel = glm::translate(model, center);
+            scaledModel = glm::scale(scaledModel, glm::vec3(1.03f));
+            scaledModel = glm::translate(scaledModel, -center);
+
+            glm::mat4 mvpScaled = projView * scaledModel;
+            edgeEffectShader_.setMatrices(mvpScaled, view, scaledModel);
+            streetlight_.draw();
         }
+
+        glStencilMask(0xFF);
+        glEnable(GL_DEPTH_TEST);
+        glDisable(GL_STENCIL_TEST);
     }
 
 
-    // TODO: À modifier, ajouter les textures, et l'effet de contour.
+
+
     void drawTrees(glm::mat4& projView)
     {
-        celShadingShader_.use();
         glm::mat4 view = getViewMatrix();
 
-        setMaterial(grassMat); // Trees use grass material per your comment
+        glEnable(GL_STENCIL_TEST);
+        glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+        glStencilFunc(GL_ALWAYS, 1, 0xFF);
+        glStencilMask(0xFF);
+        glClear(GL_STENCIL_BUFFER_BIT);
+
+        celShadingShader_.use();
+        setMaterial(grassMat);
 
         for (unsigned int i = 0; i < N_TREES; i++)
         {
@@ -601,18 +641,46 @@ struct App : public OpenGLApplication
             float x = treesPosition[i];
             float z = (i % 2 == 0) ? 3.f : -3.f;
             model = glm::translate(model, glm::vec3(x, -0.15f, z));
-
-            float angleRad = treesOrientation[i];
-            model = glm::rotate(model, angleRad, glm::vec3(0.f, 1.f, 0.f));
-
-            float scale = treesScale[i];
-            model = glm::scale(model, glm::vec3(scale));
+            model = glm::rotate(model, treesOrientation[i], glm::vec3(0.f, 1.f, 0.f));
+            model = glm::scale(model, glm::vec3(treesScale[i]));
 
             glm::mat4 mvp = projView * model;
             celShadingShader_.setMatrices(mvp, view, model);
             tree_.draw();
         }
+
+        glEnable(GL_DEPTH_TEST);
+        glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
+        glStencilMask(0x00);
+
+        edgeEffectShader_.use();
+
+        for (unsigned int i = 0; i < N_TREES; i++)
+        {
+            glm::mat4 model(1.0f);
+            float x = treesPosition[i];
+            float z = (i % 2 == 0 ? 3.f : -3.f);
+            model = glm::translate(model, glm::vec3(x, -0.15f, z));
+            model = glm::rotate(model, treesOrientation[i], glm::vec3(0.f, 1.f, 0.f));
+            model = glm::scale(model, glm::vec3(treesScale[i]));
+
+            glm::mat4 scaleAroundCenter = glm::translate(glm::mat4(1.0f), tree_.center_);
+            scaleAroundCenter = glm::scale(scaleAroundCenter, glm::vec3(1.03f));
+            scaleAroundCenter = glm::translate(scaleAroundCenter, -tree_.center_);
+
+            glm::mat4 finalModel = model * scaleAroundCenter;
+            glm::mat4 mvpScaled = projView * finalModel;
+
+            edgeEffectShader_.setMatrices(mvpScaled, view, finalModel);
+            tree_.draw();
+        }
+
+        glStencilMask(0xFF);
+        glEnable(GL_DEPTH_TEST);
+        glDisable(GL_STENCIL_TEST);
     }
+
+
 
 
     // TODO: À modifier, ajouter les textures
@@ -793,6 +861,7 @@ struct App : public OpenGLApplication
         // Ça vous donne une idée de comment utiliser les ubo dans car.cpp.
         material_.updateData(&mat, 0, sizeof(Material));
     }
+
 
     // TODO: À ajouter et modifier.
     //       Ajouter les textures, les skyboxes, les fenêtres de la voiture,

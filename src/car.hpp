@@ -33,6 +33,7 @@ private:
     void drawLight(const glm::mat4& carMVP, const glm::vec3& pos, bool isFront);
     void drawHeadlight(const glm::mat4& carMVP, const glm::vec3& pos, bool isLeft, bool isFront);
     void drawHeadlights(const glm::mat4& carMVP);
+    void drawOutline(glm::mat4& projView, glm::mat4& view);
 
 private:
     Model frame_;

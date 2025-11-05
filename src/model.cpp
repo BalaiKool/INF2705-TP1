@@ -182,6 +182,22 @@ void Model::load(const char* path)
     glBindVertexArray(0);
 
     count_ = elementsData.size();
+
+    glm::vec3 minPos(FLT_MAX);
+    glm::vec3 maxPos(-FLT_MAX);
+
+    for (size_t i = 0; i < positionX.size(); i++)
+    {
+        minPos.x = std::min(minPos.x, positionX[i]);
+        minPos.y = std::min(minPos.y, positionY[i]);
+        minPos.z = std::min(minPos.z, positionZ[i]);
+
+        maxPos.x = std::max(maxPos.x, positionX[i]);
+        maxPos.y = std::max(maxPos.y, positionY[i]);
+        maxPos.z = std::max(maxPos.z, positionZ[i]);
+    }
+
+    center_ = (minPos + maxPos) * 0.5f;
 }
 
 void Model::load(float* vertices, size_t verticesSize, unsigned int* elements, size_t elementsSize)

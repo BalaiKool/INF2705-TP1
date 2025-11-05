@@ -28,6 +28,11 @@ class EdgeEffect : public ShaderProgram
 {
 public:
     // TODO: Uniform location ou autre
+    GLuint mvpULoc = 0;
+    GLuint viewULoc = 0;
+    GLuint modelULoc = 0;
+
+    void setMatrices(glm::mat4& mvp, glm::mat4& view, glm::mat4& model);
 
 protected:
     virtual void load() override;
