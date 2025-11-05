@@ -89,7 +89,7 @@ void main()
     const float LEVELS = 4;
     vec3 texColor = texture(diffuseSampler, attribsIn.texCoords).rgb;
 
-    vec3 ambient = vec3(0.3) + globalAmbient * mat.ambient + dirLight.ambient * mat.ambient;
+    vec3 ambient = globalAmbient * mat.ambient + dirLight.ambient * mat.ambient;
     vec3 diffuse = dirLight.diffuse * mat.diffuse;
     vec3 specular = dirLight.specular * mat.specular;
 

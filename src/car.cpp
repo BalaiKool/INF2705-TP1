@@ -35,7 +35,6 @@ void Car::loadModels()
     blinker_.load("../models/blinker.ply");
     light_.load("../models/light.ply");
 
-    // ...
     // À ajouter, l'ordre est à considérer
     const char* WINDOW_MODEL_PATHES[] =
     {
