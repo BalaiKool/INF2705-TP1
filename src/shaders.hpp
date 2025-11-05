@@ -22,12 +22,9 @@ protected:
 };
 
 
-// TODO: Compléter ou ajouter ici bas:
-
 class EdgeEffect : public ShaderProgram
 {
 public:
-    // TODO: Uniform location ou autre
     GLuint mvpULoc = 0;
     GLuint viewULoc = 0;
     GLuint modelULoc = 0;
@@ -43,7 +40,6 @@ protected:
 class Sky : public ShaderProgram
 {
 public:
-    // TODO: Uniform location ou autre
 
 protected:
     virtual void load() override;

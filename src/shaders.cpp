@@ -42,7 +42,6 @@ void Sky::load()
 
 void Sky::getAllUniformLocations()
 {
-    // TODO: Initialiser les valeurs de uniform location en attributs
 }
 
 

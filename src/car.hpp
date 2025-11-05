@@ -19,12 +19,12 @@ public:
 
     void update(float deltaTime);
 
-    void draw(glm::mat4& projView, glm::mat4& view); // À besoin de la matrice de vue séparément, pour la partie 3.
+    void draw(glm::mat4& projView, glm::mat4& view); 
 
-    void drawWindows(glm::mat4& projView, glm::mat4& view); // Dessin des vitres séparées.
+    void drawWindows(glm::mat4& projView, glm::mat4& view); 
 
 private:
-    // TODO: Adapter les paramètres des méthodes privée ici au besoin, surtout pour la partie 3.
+   
     void drawFrame(glm::mat4& projView, glm::mat4& view, const glm::mat4& carTransform);
     void drawWheel(const glm::mat4& carMVP, const glm::vec3& pos, bool isFront);
     void drawWheels(const glm::mat4& carMVP);
@@ -40,7 +40,7 @@ private:
     Model wheel_;
     Model blinker_;
     Model light_;
-    Model windows[6]; // Nouveaux modèles à ajouter.
+    Model windows[6]; 
 
 public:
     glm::vec3 position;
@@ -60,7 +60,6 @@ public:
     GLuint colorModUniformLocation;
     GLuint mvpUniformLocation;
 
-    // TODO: À ajouter dans votre classe actuelle.
     glm::mat4 carModel;
 
     EdgeEffect* edgeEffectShader;

@@ -76,8 +76,6 @@ void main()
 {
     // Attribs
     
-    // TODO: Écriture des attributs de sortie
-    //       Si la normale est nul, lui donner une valeur qui pointe vers le haut.
     attribsOut.color=color;
     attribsOut.texCoords=texCoords;
 
@@ -92,12 +90,6 @@ void main()
     lightsOut.obsPos = posView.xyz;
 
     lightsOut.dirLightDir = normalize(mat3(view) * (-dirLight.direction));
-
-    // TODO: Écriture des propriétés de lumières en sortie    
-    for(int i = 0; i < nSpotLights; i++)
-    {
-        // ...
-    }
     
     gl_Position = mvp * vec4(position, 1.0);
 }

@@ -8,5 +8,5 @@ uniform mat4 mvp;
 
 void main()
 {
-    // TODO: Skybox
+
 }

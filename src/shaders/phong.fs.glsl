@@ -74,18 +74,11 @@ float computeSpot(in float openingAngle, in float exponent, in vec3 spotDir, in 
 {
     float spotFactor = 0.0;
     
-    // TODO: Calcul de spotlight, l'algorithme classique d'OpenGL vu en classe (voir annexe).
-    
     return spotFactor;
 }
 
 void main()
 {
-    // TODO: Calcul d'illumination
-
-    // Directional light
-    
-    // TODO: Seulement la lumière directionnel à l'effet de cel-shading, sur la composante diffuse et spéculaire
     const float LEVELS = 4;
     vec3 texColor = texture(diffuseSampler, attribsIn.texCoords).rgb;
 
@@ -99,12 +92,7 @@ void main()
     
     for(int i = 0; i < nSpotLights; i++)
     {
-        // TODO: Calcul des spotlights
-    
-        // Utiliser un facteur d'atténuation. On peut utiliser smoothstep avec la distance
-        // entre la surface illuminé et la source de lumière. Il devrait y avoir un effet de blending
-        // entre 7 et 10 unitées.
-        // Le facteur impacte la composante diffuse et spéculaire.
+       
     }
 
     
