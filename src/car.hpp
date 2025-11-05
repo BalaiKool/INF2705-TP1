@@ -27,6 +27,7 @@ private:
     // TODO: Adapter les paramètres des méthodes privée ici au besoin, surtout pour la partie 3.
     void drawFrame(glm::mat4& projView, glm::mat4& view, const glm::mat4& carTransform);
     void drawWheel(const glm::mat4& carMVP, const glm::vec3& pos, bool isFront);
+    void drawWindow(const glm::mat4& projView, glm::mat4& view, const glm::vec3& pos, const int index);
     void drawWheels(const glm::mat4& carMVP);
 
     void drawBlinker(const glm::mat4& carMVP, const glm::vec3& pos, bool isLeft, bool isFront);

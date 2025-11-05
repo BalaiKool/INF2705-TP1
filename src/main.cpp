@@ -480,6 +480,7 @@ struct App : public OpenGLApplication
         treeTexture_.load("../textures/tree.jpg");
         streetlightTexture_.load("../textures/streetlight.jpg");
         streetlightLightTexture_.load("../textures/streetlight_light.png");
+        carWindowTexture_.load("../textures/window.png");
 
         grassTexture_.load("../textures/grass.jpg");
         streetTexture_.load("../textures/street.jpg");
@@ -548,8 +549,8 @@ struct App : public OpenGLApplication
         streetlightTexture_.use();
         streetlightTexture_.setWrap(GL_CLAMP_TO_EDGE);
         streetlightTexture_.enableMipmap();
-        streetlightTexture_.setFiltering(GL_NEAREST_MIPMAP_NEAREST);
-        //streetlightTexture_.setFiltering(GL_NEAREST);
+        //streetlightTexture_.setFiltering(GL_NEAREST_MIPMAP_NEAREST);
+        streetlightTexture_.setFiltering(GL_NEAREST);
 
         glEnable(GL_STENCIL_TEST);
         glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
@@ -686,8 +687,6 @@ struct App : public OpenGLApplication
     }
 
 
-
-
     // TODO: À modifier, ajouter les textures
     void drawGround(const glm::mat4& projView)
     {
@@ -732,6 +731,13 @@ struct App : public OpenGLApplication
 
         car_.update(deltaTime_);
         car_.draw(projView, view);
+
+        setMaterial(windowMat);
+        carWindowTexture_.use();
+        carWindowTexture_.setWrap(GL_CLAMP_TO_EDGE);
+        carWindowTexture_.enableMipmap();
+        carWindowTexture_.setFiltering(GL_NEAREST_MIPMAP_NEAREST);
+        car_.drawWindows(projView, view);
         }
 
 

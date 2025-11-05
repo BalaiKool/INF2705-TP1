@@ -141,6 +141,7 @@ void Car::draw(glm::mat4& projView, glm::mat4& view)
     edgeEffectShader->setMatrices(scaledMVP, view, scaledCarTransform);
     frame_.draw();
     drawWheels(scaledMVP);
+    drawWindows(projView, view);
 
     glStencilMask(0xFF);
     glStencilFunc(GL_ALWAYS, 0, 0xFF);
@@ -189,10 +190,19 @@ void Car::drawWheels(const mat4& carMVP)
     }
 }
 
+void Car::drawWindow(const glm::mat4& projView, glm::mat4& view, const glm::vec3& pos, const int index)
+{
+    celShadingShader->use();
+    mat4 model = glm::translate(mat4(1.0), pos);
+    mat4 mvp = projView * model;
+
+    celShadingShader->setMatrices(mvp, view, model);
+    windows[index].draw();
+}
 
 void Car::drawWindows(glm::mat4& projView, glm::mat4& view)
 {
-    const glm::vec3 WINDOW_POSITION[] =
+    const glm::vec3 WINDOW_POSITION[6] =
     {
         glm::vec3(-0.813, 0.755, 0.0),
         glm::vec3(1.092, 0.761, 0.0),
@@ -202,6 +212,9 @@ void Car::drawWindows(glm::mat4& projView, glm::mat4& view)
         glm::vec3(0.643, 0.756, -0.508)
     };
 
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glDisable(GL_CULL_FACE);
     // TODO: À ajouter et compléter.
     //       Dessiner les vitres de la voiture. Celles-ci ont une texture transparente,
     //       il est donc nécessaire d'activer le mélange des couleurs (GL_BLEND).
@@ -214,21 +227,32 @@ void Car::drawWindows(glm::mat4& projView, glm::mat4& view)
 
 
     // Les fenêtres sont par rapport au chassi, à considérer dans votre matrice
-    // model = glm::translate(model, glm::vec3(0.0f, 0.25f, 0.0f));
+    mat4 model = glm::translate(model, vec3(0.f, 0.25f, 0.f));
+
+    vec3 posCamera = vec3(inverse(view) * vec4(0, 0, 0, 1));
 
     std::map<float, unsigned int> sorted;
     for (unsigned int i = 0; i < 6; i++)
     {
-        // TODO: Calcul de la distance par rapport à l'observateur (utiliser la matrice de vue!)
-        //       et faite une insertion dans le map
+        vec3 worldPos = vec3(model * vec4(WINDOW_POSITION[i], 1.0f));
+        float distance = length(posCamera - worldPos);
+        sorted[distance] = i;
     }
 
     // TODO: Itération à l'inverse (de la plus grande distance jusqu'à la plus petit)
     for (std::map<float, unsigned int>::reverse_iterator it = sorted.rbegin(); it != sorted.rend(); ++it)
     {
         // TODO: Dessin des fenêtres
+        unsigned int index = it->second;
+        drawWindow(projView, view, WINDOW_POSITION[index], index);
     }
+
+
+    glDisable(GL_BLEND);
+    glEnable(GL_CULL_FACE);
+
 }
+
 
 void Car::drawBlinker(const mat4& carMVP, const vec3& pos, bool isLeft, bool isFront)
 {
