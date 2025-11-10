@@ -43,7 +43,7 @@ static bool checkProgramLinkingError(const char* name, GLuint id)
 }
 
 ShaderProgram::ShaderProgram()
-: id_(0), name_("Uninitialized Name")
+    : id_(0), name_("Uninitialized Name")
 {
 
 }
@@ -54,7 +54,7 @@ ShaderProgram::~ShaderProgram()
 }
 
 void ShaderProgram::create()
-{    
+{
     id_ = glCreateProgram();
     load();
 }
@@ -70,9 +70,17 @@ void ShaderProgram::reload()
         const std::string& path = it->first;
         if (path.find("vs") != std::string::npos)
             type = GL_VERTEX_SHADER;
+        else if (path.find("tcs") != std::string::npos)
+            type = GL_TESS_CONTROL_SHADER;
+        else if (path.find("tes") != std::string::npos)
+            type = GL_TESS_EVALUATION_SHADER;
+        else if (path.find("gs") != std::string::npos)
+            type = GL_GEOMETRY_SHADER;
         else if (path.find("fs") != std::string::npos)
             type = GL_FRAGMENT_SHADER;
-        
+        else if (path.find("cs") != std::string::npos)
+            type = GL_COMPUTE_SHADER;
+
         loadShaderSource(type, path.c_str());
     }
     link();
@@ -101,7 +109,7 @@ void ShaderProgram::loadShaderSource(GLenum type, const char* path)
         glDeleteShader(shaderObject);
         shaderObject = 0;
     }
-    
+
     shaderSourcesCompiled_[path] = shaderObject;
 }
 
@@ -123,7 +131,7 @@ void ShaderProgram::link()
             glDeleteShader(it->second);
         }
     }
-    
+
     if (id_)
     {
         getAllUniformLocations();

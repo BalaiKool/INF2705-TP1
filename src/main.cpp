@@ -126,10 +126,73 @@ Material windowMat =
 };
 
 
+// TODO: Petit ajout à votre main.cpp
+
+
+Material bezierMat =
+{
+    {1.0f, 1.0f, 1.0f, 0.0f},
+    {0.0f, 0.0f, 0.0f, 0.0f},
+    {0.0f, 0.0f, 0.0f, 0.0f},
+    {0.0f, 0.0f, 0.0f},
+    0.0f
+};
+
+struct BezierCurve
+{
+    glm::vec3 p0;
+    glm::vec3 c0;
+    glm::vec3 c1;
+    glm::vec3 p1;
+};
+
+BezierCurve curves[5] =
+{
+    {
+        glm::vec3(-28.7912, 1.4484, -1.7349),
+        glm::vec3(-28.0654, 1.4484, 6.1932),
+        glm::vec3(-10.3562, 8.8346, 6.5997),
+        glm::vec3(-7.6701, 8.8346, 8.9952)
+    },
+    {
+        glm::vec3(-7.6701, 8.8346, 8.9952),
+        glm::vec3(-3.9578, 8.8346, 12.3057),
+        glm::vec3(-2.5652, 2.4770, 13.6914),
+        glm::vec3(2.5079, 1.4484, 11.6581)
+    },
+    {
+        glm::vec3(2.5079, 1.4484, 11.6581),
+        glm::vec3(7.5810, 0.4199, 9.6248),
+        glm::vec3(16.9333, 3.3014, 5.7702),
+        glm::vec3(28.4665, 6.6072, 3.9096)
+    },
+    {
+        glm::vec3(28.4665, 6.6072, 3.9096),
+        glm::vec3(39.9998, 9.9131, 2.0491),
+        glm::vec3(30.8239, 5.7052, -15.2108),
+        glm::vec3(21.3852, 5.7052, -9.0729)
+    },
+    {
+        glm::vec3(21.3852, 5.7052, -9.0729),
+        glm::vec3(11.9464, 5.7052, -2.9349),
+        glm::vec3(-1.0452, 1.4484, -12.4989),
+        glm::vec3(-12.2770, 1.4484, -13.2807)
+    }
+};
+
 // Définition des couleurs
 const vec4 red = { 1.f, 0.f, 0.f, 1.0f };
 const vec4 green = { 0.f, 1.f, 0.f, 1.0f };
 const vec4 blue = { 0.f, 0.f, 1.f, 1.0f };
+
+
+// TODO: Ajouter ces attributs
+unsigned int bezierNPoints = 3;
+unsigned int oldBezierNPoints = 0;
+
+int cameraMode = 0;
+float cameraAnimation = 0.f;
+bool isAnimatingCamera = false;
 
 struct App : public OpenGLApplication
 {
@@ -250,6 +313,13 @@ struct App : public OpenGLApplication
 
         lights_.allocate(&lightsData_, sizeof(lightsData_));
         lights_.setBindingIndex(1);
+
+        // TODO: Création des nouveaux shaders
+
+        // TODO: Initialisation des meshes (béziers, patches)
+
+
+        glEnable(GL_PROGRAM_POINT_SIZE); // pour être en mesure de modifier gl_PointSize dans les shaders
 
         CHECK_GL_ERROR;
     }
@@ -708,8 +778,12 @@ struct App : public OpenGLApplication
 
     glm::mat4 getPerspectiveProjectionMatrix()
     {
+        // TODO: Pertinent de modifier la distance ici.
+        const float far = 300.f;
+
         float screenRatio = static_cast<float>(window_.getSize().x) / static_cast<float>(window_.getSize().y);
-        return glm::perspective(glm::radians(70.0f), screenRatio, 0.1f, 100.0f);
+        return glm::perspective(glm::radians(70.0f), screenRatio, 0.1f, far);
+
     }
 
     void setLightingUniform()
@@ -824,6 +898,14 @@ struct App : public OpenGLApplication
     void sceneMain()
     {
         ImGui::Begin("Scene Parameters");
+        // TODO: À ajouter
+        ImGui::SliderInt("Bezier Number Of Points", (int*)&bezierNPoints, 0, 16);
+        if (ImGui::Button("Animate Camera"))
+        {
+            isAnimatingCamera = true;
+            cameraMode = 1;
+        }
+        //
         if (ImGui::Button("Toggle Day/Night"))
         {
             isDay_ = !isDay_;
@@ -841,6 +923,29 @@ struct App : public OpenGLApplication
         ImGui::Checkbox("Brake", &car_.isBraking);
         ImGui::End();
 
+
+        std::cout << "camera value: " << isAnimatingCamera << std::endl;
+        if (isAnimatingCamera)
+        {
+            
+            if (cameraAnimation < 5)
+            {
+                // TODO: Animation de la caméra
+                // cameraPosition_ = ...
+
+                cameraAnimation += deltaTime_ / 3.0;
+            }
+            else
+            {
+                // Remise à 0 de l'orientation
+                glm::vec3 diff = car_.position - cameraPosition_;
+                cameraOrientation_.y = M_PI + atan2(diff.z, diff.x);
+
+                cameraAnimation = 0.f;
+                isAnimatingCamera = false;
+                cameraMode = 0;
+            }
+        }
         updateCameraInput();
         car_.update(deltaTime_);
 
@@ -863,7 +968,26 @@ struct App : public OpenGLApplication
 
         setMaterial(defaultMat);
         drawCar(projView, view);
+
+        bool hasNumberOfSidesChanged = bezierNPoints != oldBezierNPoints;
+        if (hasNumberOfSidesChanged)
+        {
+            oldBezierNPoints = bezierNPoints;
+
+            // TODO: Calcul et mise à jour de la courbe
+        }
+
+        // TODO: Dessin de la courbe
+        // glDraw...
+
+
+        // TODO: Dessin du gazon
+        // glDraw...
     }
+
+
+
+    // TODO: Ajouter les attributs de vbo, ebo, vao nécessaire
 
 private:
     // Shaders
@@ -930,6 +1054,7 @@ private:
 
     bool isMouseMotionEnabled_;
     bool isQWERTY_;
+
 };
 
 
