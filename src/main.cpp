@@ -125,10 +125,6 @@ Material windowMat =
     2.0f
 };
 
-
-// TODO: Petit ajout à votre main.cpp
-
-
 Material bezierMat =
 {
     {1.0f, 1.0f, 1.0f, 0.0f},
@@ -186,8 +182,6 @@ const vec4 red = { 1.f, 0.f, 0.f, 1.0f };
 const vec4 green = { 0.f, 1.f, 0.f, 1.0f };
 const vec4 blue = { 0.f, 0.f, 1.f, 1.0f };
 
-
-// TODO: Ajouter ces attributs
 unsigned int bezierNPoints = 3;
 unsigned int oldBezierNPoints = 0;
 
@@ -317,10 +311,6 @@ struct App : public OpenGLApplication
 
         lights_.allocate(&lightsData_, sizeof(lightsData_));
         lights_.setBindingIndex(1);
-
-        // TODO: Création des nouveaux shaders
-
-        // TODO: Initialisation des meshes (béziers, patches)
         bezierVAO_ = 0;
         bezierVBO_ = 0;
         bezierVertexCount = 0;
@@ -329,7 +319,7 @@ struct App : public OpenGLApplication
 
         generateGrassPatches(110, 55, 0.9f);
 
-        glEnable(GL_PROGRAM_POINT_SIZE); // pour être en mesure de modifier gl_PointSize dans les shaders
+        glEnable(GL_PROGRAM_POINT_SIZE);
 
         CHECK_GL_ERROR;
     }
@@ -386,11 +376,6 @@ struct App : public OpenGLApplication
         ImGui::End();
 
         sceneMain();
-        std::cout << "Camera: (" << cameraPosition_.x << ", "
-            << cameraPosition_.y << ", "
-            << cameraPosition_.z << ")" << std::endl;
-        std::cout << "orientation: (" << cameraOrientation_.x << ", "
-            << cameraOrientation_.y <<  ")" << std::endl;
         CHECK_GL_ERROR;
     }
 
@@ -602,7 +587,6 @@ struct App : public OpenGLApplication
         streetlightTexture_.setWrap(GL_CLAMP_TO_EDGE);
         streetlightTexture_.enableMipmap();
         streetlightTexture_.setFiltering(GL_NEAREST_MIPMAP_NEAREST);
-        //streetlightTexture_.setFiltering(GL_NEAREST);
 
         glEnable(GL_STENCIL_TEST);
         glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
@@ -612,7 +596,6 @@ struct App : public OpenGLApplication
 
         celShadingShader_.use();
 
-        // Draw streetlights normally
         for (unsigned int i = 0; i < N_STREETLIGHTS; i++)
         {
             float x = lightsPosition[i];
@@ -637,7 +620,6 @@ struct App : public OpenGLApplication
             
         }
 
-        // Draw outlines using stencil
         glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
         glStencilMask(0x00);
         glEnable(GL_DEPTH_TEST);
@@ -902,7 +884,6 @@ struct App : public OpenGLApplication
 
         bezierVertexCount = verts.size();
 
-        // Création / mise à jour du VAO / VBO
         if (bezierVAO_ == 0)
         {
             glGenVertexArrays(1, &bezierVAO_);
@@ -912,10 +893,8 @@ struct App : public OpenGLApplication
         glBindVertexArray(bezierVAO_);
         glBindBuffer(GL_ARRAY_BUFFER, bezierVBO_);
 
-        // allocation & upload
         glBufferData(GL_ARRAY_BUFFER, verts.size() * sizeof(glm::vec3), verts.data(), GL_DYNAMIC_DRAW);
 
-        // position attribute (layout location 0 supposé) — adaptez si votre shader diffère
         glEnableVertexAttribArray(0);
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (GLvoid*)0);
 
@@ -938,7 +917,6 @@ struct App : public OpenGLApplication
 
     glm::mat4 getPerspectiveProjectionMatrix()
     {
-        // TODO: Pertinent de modifier la distance ici.
         const float far = 300.f;
 
         float screenRatio = static_cast<float>(window_.getSize().x) / static_cast<float>(window_.getSize().y);
@@ -1058,14 +1036,13 @@ struct App : public OpenGLApplication
     void sceneMain()
     {
         ImGui::Begin("Scene Parameters");
-        // TODO: À ajouter
         ImGui::SliderInt("Bezier Number Of Points", (int*)&bezierNPoints, 0, 16);
         if (ImGui::Button("Animate Camera"))
         {
             isAnimatingCamera = true;
             cameraMode = 1;
         }
-        //
+
         if (ImGui::Button("Toggle Day/Night"))
         {
             isDay_ = !isDay_;
@@ -1092,22 +1069,14 @@ struct App : public OpenGLApplication
             }
             if (cameraAnimation < nPoints)
             {
-                // TODO: Animation de la caméra
                 unsigned int animationIndex = (unsigned int)floor(cameraAnimation);
                 float localT = cameraAnimation - animationIndex;
-
-                // S'assurer qu'on ne dépasse pas
-                if (animationIndex >= nPoints) {
-                    animationIndex = nPoints - 1;
-                    localT = 1.0f;
-                }
 
                 cameraPosition_ = casteljauPoints(curves[animationIndex], localT);
                 glm::vec3 directionToCar = car_.position - cameraPosition_;
 
                 cameraOrientation_.y = M_PI + atan2(directionToCar.x, directionToCar.z);
 
-                // Calculer l'orientation verticale (pitch)
                 float horizontalDistance = sqrt(directionToCar.x * directionToCar.x + directionToCar.z * directionToCar.z);
                 cameraOrientation_.x = atan2(directionToCar.y, horizontalDistance);
 
@@ -1157,17 +1126,13 @@ struct App : public OpenGLApplication
         if (hasNumberOfSidesChanged)
         {
             oldBezierNPoints = bezierNPoints;
-
-            // TODO: Calcul et mise à jour de la courbe
             buildAndUploadBezierMesh();
         }
 
-        // TODO: Dessin de la courbe
         setMaterial(bezierMat);
         glDrawBezierLine(projView, view);
         CHECK_GL_ERROR;
 
-        // TODO: Dessin du gazon
         glm::mat4 model = glm::mat4(1.0f);
         glm::mat4 mvp = proj * view * model;
 
@@ -1181,8 +1146,6 @@ struct App : public OpenGLApplication
         //glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     }
 
-
-    // TODO: Ajouter les attributs de vbo, ebo, vao nécessaire
 
 private:
     // Shaders
@@ -1230,7 +1193,6 @@ private:
     GLuint grassVBO = 0;
     int grassVertexCount = 0;
 
-    // TP1
     Car car_;
 
     glm::vec3 cameraPosition_;
