@@ -1113,6 +1113,8 @@ struct App : public OpenGLApplication
         glDispatchCompute(MAX_PARTICLES_, 1, 1);
 
         glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+
+        std::swap(particles_[0], particles_[1]);
     }
 
 
@@ -1128,11 +1130,22 @@ struct App : public OpenGLApplication
 
         glm::mat4 V = getViewMatrix();
         glm::mat4 P = getPerspectiveProjectionMatrix();
+        glm::vec3 cameraRight = glm::normalize(glm::vec3(V[0][0], V[1][0], V[2][0]));
+        glm::vec3 cameraUp = glm::normalize(glm::vec3(V[0][1], V[1][1], V[2][1]));
+
+        glUniformMatrix4fv(particlesShader_.viewULoc, 1, GL_FALSE, glm::value_ptr(V));
+        glUniform3fv(particlesShader_.cameraRightULoc, 1, glm::value_ptr(cameraRight));
+        glUniform3fv(particlesShader_.cameraUpULoc, 1, glm::value_ptr(cameraUp));
+
 
         glUniformMatrix4fv(particlesShader_.modelViewULoc, 1, GL_FALSE, glm::value_ptr(V));
         glUniformMatrix4fv(particlesShader_.projectionULoc, 1, GL_FALSE, glm::value_ptr(P));
 
+        particles_[0].setBindingIndex(0);
+        glBindVertexArray(vaoParticles_);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, particles_[0].getID());
         glDrawArrays(GL_POINTS, 0, nParticles_);
+
 
         glDepthMask(GL_TRUE);
         glDisable(GL_BLEND);
@@ -1242,14 +1255,11 @@ struct App : public OpenGLApplication
         glm::mat4 model = glm::mat4(1.0f);
         glm::mat4 mvp = proj * view * model;
 
-        //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-
         grassShader_.use();
         grassShader_.setMatrices(mvp, model);
         grassShader_.setModelView(view * model);
         drawGrass();
 
-        //glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
         // Particles
         vec3 exhaustPos = vec3(2.0f, 0.24f, -0.43f);
         vec3 exhaustDir = vec3(1.0f, 0.0f, 0.0f);
@@ -1260,7 +1270,6 @@ struct App : public OpenGLApplication
         CHECK_GL_ERROR;
         drawParticles();
         CHECK_GL_ERROR;
-        std::swap(particles_[0], particles_[1]);
     }
 
 

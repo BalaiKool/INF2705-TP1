@@ -58,17 +58,17 @@ void main()
 
     p.timeToLive -= deltaTime;
 
-    float life01 = p.timeToLive / p.maxTimeToLive;
+   float life01 = 1 - (p.timeToLive / p.maxTimeToLive);
 
     p.position += p.velocity * deltaTime;
     p.zOrientation += 0.5 * deltaTime;
+
     p.color.rgb = mix(vec3(1.0), vec3(0.5), life01);
 
     float s = smoothstep(0.0, 1.0, life01);
-    float opacity = s * (1.0 - s);
-    p.color.a = opacity * 2.0;
 
     p.size = mix(vec2(0.5), vec2(0.2), life01);
 
     dataOut.particles[id] = p;
+
 }

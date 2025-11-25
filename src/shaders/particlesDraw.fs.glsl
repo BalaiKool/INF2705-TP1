@@ -1,19 +1,18 @@
-#version 330 core
+#version 430 core
 
-in GS_OUT {
-    vec2 texCoord;
-    vec4 color;
-} fsIn;
+in vec2 texCoord;
+in vec4 color;
 
 out vec4 FragColor;
 
-uniform sampler2D textureSampler;
+uniform sampler2D particlesTex;
 
 void main()
 {
-    vec4 texColor = texture(textureSampler, fsIn.texCoord);
-    if(texColor.a < 0.02)
-        discard;
+    vec4 texColor = texture(particlesTex, texCoord);
+    FragColor = texColor * color;
 
-    FragColor = texColor * fsIn.color;
+    // Discard almost transparent tex
+    if (FragColor.a < 0.01)
+        discard;
 }

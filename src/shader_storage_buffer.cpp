@@ -45,3 +45,9 @@ ShaderStorageBuffer& ShaderStorageBuffer::operator=(ShaderStorageBuffer&& other)
     other.id_ = 0;
     return *this;
 }
+
+GLuint ShaderStorageBuffer::getID() const
+{
+    return id_;
+}
+

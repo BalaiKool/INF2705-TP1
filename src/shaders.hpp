@@ -97,6 +97,7 @@ protected:
 class ParticlesShader : public ShaderProgram
 {
 public:
+    GLuint viewULoc = 0;
     GLuint modelViewULoc = 0;
     GLuint projectionULoc = 0;
     GLuint texSamplerULoc = 0;

@@ -141,6 +141,7 @@ void ParticlesShader::load()
 
 void ParticlesShader::getAllUniformLocations()
 {
+    viewULoc = glGetUniformLocation(id_, "view");
     modelViewULoc = glGetUniformLocation(id_, "modelView");
     projectionULoc = glGetUniformLocation(id_, "projection");
     texSamplerULoc = glGetUniformLocation(id_, "textureSampler");

@@ -21,6 +21,8 @@ public:
     void bindAsArray();
     
     ShaderStorageBuffer& operator=(ShaderStorageBuffer&& other);
+    GLuint getID() const;
+
     
 private:
     GLuint id_;

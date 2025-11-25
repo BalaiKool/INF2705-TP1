@@ -1,9 +1,4 @@
-#version 330 core
-
-layout(location = 0) in vec3 inPosition;
-layout(location = 1) in float inZOrientation;
-layout(location = 2) in vec4 inColor;
-layout(location = 3) in vec2 inSize;
+#version 430 core
 
 out VS_OUT {
     vec3 position;
@@ -12,14 +7,26 @@ out VS_OUT {
     vec2 size;
 } vsOut;
 
-uniform mat4 modelView;
+layout(std430, binding = 0) readonly buffer ParticlesInputBlock
+{
+    struct Particle
+    {
+        vec3 position;
+        float zOrientation;
+        vec3 velocity;
+        vec4 color;
+        vec2 size;
+        float timeToLive;
+        float maxTimeToLive;
+    } particles[];
+};
 
 void main()
 {
-    vsOut.position = (modelView * vec4(inPosition,1)).xyz;
-    vsOut.zOrientation = inZOrientation;
-    vsOut.color = inColor;
-    vsOut.size = inSize;
+    Particle p = particles[gl_VertexID];
 
-    gl_Position = modelView * vec4(inPosition, 1.0);
+    vsOut.position     = p.position;
+    vsOut.zOrientation = p.zOrientation;
+    vsOut.color        = p.color;
+    vsOut.size         = p.size;
 }
