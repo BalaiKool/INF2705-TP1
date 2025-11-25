@@ -172,6 +172,7 @@
     <ClCompile Include="model.cpp" />
     <ClCompile Include="shaders.cpp" />
     <ClCompile Include="shader_program.cpp" />
+    <ClCompile Include="shader_storage_buffer.cpp" />
     <ClCompile Include="textures.cpp" />
     <ClCompile Include="uniform_buffer.cpp" />
   </ItemGroup>
@@ -181,6 +182,10 @@
     <None Include="README.md" />
     <None Include="shaders\basic.fs.glsl" />
     <None Include="shaders\basic.vs.glsl" />
+    <None Include="shaders\particlesDraw.fs.glsl" />
+    <None Include="shaders\particlesDraw.gs.glsl" />
+    <None Include="shaders\particlesDraw.vs.glsl" />
+    <None Include="shaders\particlesUpdate.cs.glsl" />
     <None Include="shaders\transform.fs.glsl" />
     <None Include="shaders\transform.vs.glsl" />
   </ItemGroup>
