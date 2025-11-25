@@ -1261,19 +1261,6 @@ struct App : public OpenGLApplication
         drawParticles();
         CHECK_GL_ERROR;
         std::swap(particles_[0], particles_[1]);
-
-        // Particles
-        vec3 exhaustPos = vec3(2.0f, 0.24f, -0.43f);
-        vec3 exhaustDir = vec3(1.0f, 0.0f, 0.0f);
-        CHECK_GL_ERROR;
-        updateParticleCounters();
-        CHECK_GL_ERROR;
-        updateParticles(exhaustPos, exhaustDir, car_.carModel);
-        CHECK_GL_ERROR;
-        drawParticles();
-        CHECK_GL_ERROR;
-        std::swap(particles_[0], particles_[1]);
-
     }
 
 
