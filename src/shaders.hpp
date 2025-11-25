@@ -70,3 +70,20 @@ protected:
     virtual void assignAllUniformBlockIndexes() override;
 };
 
+
+class BasicShader : public ShaderProgram
+{
+public:
+    GLint mvpULoc = -1;
+
+protected:
+    void load() override {
+        loadShaderSource(GL_VERTEX_SHADER, "./shaders/basic.vs.glsl");
+        loadShaderSource(GL_FRAGMENT_SHADER, "./shaders/basic.fs.glsl");
+        link();
+    }
+
+    void getAllUniformLocations() override {
+        mvpULoc = glGetUniformLocation(id_, "mvp");
+    }
+};
