@@ -324,42 +324,7 @@ struct App : public OpenGLApplication
 
         generateGrassPatches(110, 55, 0.9f);
 
-        for (int i = 0; i < 2; i++)
-        {
-            if (i == 0)
-            {
-                Particle* zeroParticles = new Particle[MAX_PARTICLES_]();
-                particles_[i].allocate(zeroParticles, MAX_PARTICLES_ * sizeof(Particle), GL_DYNAMIC_COPY);
-                delete[] zeroParticles;
-            }
-            else
-            {
-                particles_[i].allocate(nullptr, MAX_PARTICLES_ * sizeof(Particle), GL_DYNAMIC_COPY);
-            }
-        }
-
-        glGenVertexArrays(1, &vaoParticles_);
-        glBindVertexArray(vaoParticles_);
-
-        glEnableVertexAttribArray(0);
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Particle), (void*)offsetof(Particle, position));
-
-        glEnableVertexAttribArray(1);
-        glVertexAttribPointer(1, 1, GL_FLOAT, GL_FALSE, sizeof(Particle), (void*)offsetof(Particle, zOrientation));
-
-        glEnableVertexAttribArray(2);
-        glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(Particle), (void*)offsetof(Particle, color));
-
-        glEnableVertexAttribArray(3);
-        glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, sizeof(Particle), (void*)offsetof(Particle, size));
-
-        glBindVertexArray(0);
-
-        particlesTexture_.load("../textures/smoke.png");
-        particlesTexture_.use();
-
-        particlesTexture_.setFiltering(GL_LINEAR);
-        particlesTexture_.setWrap(GL_CLAMP_TO_EDGE);
+        initParticles();
 
         glEnable(GL_PROGRAM_POINT_SIZE); // pour être en mesure de modifier gl_PointSize dans les shaders
 
@@ -1076,29 +1041,45 @@ struct App : public OpenGLApplication
         material_.updateData(&mat, 0, sizeof(Material));
     }
 
-    void initParticles() {
-        glGenBuffers(1, &ssboRead);
-        glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboRead);
-        glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(Particle) * nParticles_, nullptr, GL_DYNAMIC_DRAW);
+    void initParticles()
+    {
+        {
+            Particle* zeroParticles = new Particle[MAX_PARTICLES_]();
+            particles_[0].allocate(zeroParticles, MAX_PARTICLES_ * sizeof(Particle), GL_DYNAMIC_COPY);
+            delete[] zeroParticles;
 
-        glGenBuffers(1, &ssboWrite);
-        glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboWrite);
-        glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(Particle) * nParticles_, nullptr, GL_DYNAMIC_DRAW);
+            particles_[1].allocate(nullptr, MAX_PARTICLES_ * sizeof(Particle), GL_DYNAMIC_COPY);
+        }
 
         glGenVertexArrays(1, &vaoParticles_);
         glBindVertexArray(vaoParticles_);
 
         glEnableVertexAttribArray(0); // position
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Particle), (void*)offsetof(Particle, position));
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Particle),
+            (void*)offsetof(Particle, position));
 
-        glEnableVertexAttribArray(1); // couleur
-        glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(Particle), (void*)offsetof(Particle, color));
+        glEnableVertexAttribArray(1); // zOrientation
+        glVertexAttribPointer(1, 1, GL_FLOAT, GL_FALSE, sizeof(Particle),
+            (void*)offsetof(Particle, zOrientation));
 
-        glEnableVertexAttribArray(2); // taille
-        glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Particle), (void*)offsetof(Particle, size));
+        glEnableVertexAttribArray(2); // color
+        glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(Particle),
+            (void*)offsetof(Particle, color));
+
+        glEnableVertexAttribArray(3); // size
+        glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, sizeof(Particle),
+            (void*)offsetof(Particle, size));
 
         glBindVertexArray(0);
+
+        particlesTexture_.load("../textures/smoke.png");
+        particlesTexture_.use();
+        particlesTexture_.setFiltering(GL_LINEAR);
+        particlesTexture_.setWrap(GL_CLAMP_TO_EDGE);
+
+        glEnable(GL_PROGRAM_POINT_SIZE);
     }
+
 
     void updateParticleCounters()
     {
@@ -1129,8 +1110,7 @@ struct App : public OpenGLApplication
         particles_[0].setBindingIndex(0);
         particles_[1].setBindingIndex(1);
 
-        unsigned int workGroups = (MAX_PARTICLES_ + 63) / 64;
-        glDispatchCompute(workGroups, 1, 1);
+        glDispatchCompute(MAX_PARTICLES_, 1, 1);
 
         glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
     }
@@ -1273,10 +1253,13 @@ struct App : public OpenGLApplication
         // Particles
         vec3 exhaustPos = vec3(2.0f, 0.24f, -0.43f);
         vec3 exhaustDir = vec3(1.0f, 0.0f, 0.0f);
-
+        CHECK_GL_ERROR;
         updateParticleCounters();
+        CHECK_GL_ERROR;
         updateParticles(exhaustPos, exhaustDir, car_.carModel);
+        CHECK_GL_ERROR;
         drawParticles();
+        CHECK_GL_ERROR;
         std::swap(particles_[0], particles_[1]);
 
     }

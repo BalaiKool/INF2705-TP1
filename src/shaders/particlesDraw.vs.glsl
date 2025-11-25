@@ -16,10 +16,10 @@ uniform mat4 modelView;
 
 void main()
 {
-    vsOut.position     = inPosition;
+    vsOut.position = (modelView * vec4(inPosition,1)).xyz;
     vsOut.zOrientation = inZOrientation;
-    vsOut.color        = inColor;
-    vsOut.size         = inSize;
+    vsOut.color = inColor;
+    vsOut.size = inSize;
 
     gl_Position = modelView * vec4(inPosition, 1.0);
 }
