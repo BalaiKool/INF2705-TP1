@@ -58,6 +58,42 @@ protected:
     virtual void assignAllUniformBlockIndexes() override;
 };
 
+
+class BasicShader : public ShaderProgram
+{
+public:
+    GLint mvpULoc = -1;
+
+protected:
+    void load() override {
+        loadShaderSource(GL_VERTEX_SHADER, "./shaders/basic.vs.glsl");
+        loadShaderSource(GL_FRAGMENT_SHADER, "./shaders/basic.fs.glsl");
+        link();
+    }
+
+    void getAllUniformLocations() override {
+        mvpULoc = glGetUniformLocation(id_, "mvp");
+    }
+};
+
+class GrassShader : public ShaderProgram
+{
+public:
+    GLuint mvpULoc = 0;
+    GLuint modelULoc = 0;
+    GLuint timeULoc = 0;
+    GLint modelViewULoc;
+
+    inline void use() { glUseProgram(id_); }
+
+    void setMatrices(glm::mat4& mvp, glm::mat4& model);
+    void setModelView(const glm::mat4& mv);
+
+protected:
+    virtual void load() override;
+    virtual void getAllUniformLocations() override;
+};
+
 class ParticlesShader : public ShaderProgram
 {
 public:

@@ -1,29 +1,39 @@
 #version 400 core
 
-// TODO: À remplir
-//layout() out;
+layout(vertices = 3) out;
 
 uniform mat4 modelView;
 
+const float MIN_TESS = 2.0;
+const float MAX_TESS = 32.0;
+
+const float MIN_DIST = 10.0;
+const float MAX_DIST = 40.0;
+
+float tessLevelForEdge(vec4 p0, vec4 p1)
+{
+    vec4 mid = (p0 + p1) * 0.5;
+    float dist = length( (modelView * mid).xyz ); // distance à la caméra
+
+    float f = clamp((dist - MIN_DIST) / (MAX_DIST - MIN_DIST), 0.0, 1.0);
+
+    return mix(MAX_TESS, MIN_TESS, f);
+}
+
 void main()
 {
-    // TODO: Définir le niveau de tessellation une fois par patch.
-    
-    vec4 v0 = gl_in[0].gl_Position; // (1, 0, 0)
-    vec4 v1 = gl_in[1].gl_Position; // (0, 1, 0)
-    vec4 v2 = gl_in[2].gl_Position; // (0, 0, 1)
-        
-    const float MIN_TESS = 2;
-    const float MAX_TESS = 32;
+    gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;
 
-    const float MIN_DIST = 10.0f;
-    const float MAX_DIST = 40.0f;
+    if (gl_InvocationID == 0)
+    {
+        float t0 = tessLevelForEdge(gl_in[1].gl_Position, gl_in[2].gl_Position);
+        float t1 = tessLevelForEdge(gl_in[2].gl_Position, gl_in[0].gl_Position);
+        float t2 = tessLevelForEdge(gl_in[0].gl_Position, gl_in[1].gl_Position);
 
-    // Utiliser la distance du point milieu de l'arête traité par rapport à la caméra
-    // comme facteur pour déterminer le niveau de tessellation.
-    
-    // Une fonction par palié donnera un meilleur résultat pour déterminer le niveau de tessellation
-    // selon la distance.
-        
-    // La tessellation de l'interieur est le maximum des tessellations extérieurs
+        gl_TessLevelOuter[0] = t0;
+        gl_TessLevelOuter[1] = t1;
+        gl_TessLevelOuter[2] = t2;
+
+        gl_TessLevelInner[0] = max(t0, max(t1, t2));
+    }
 }

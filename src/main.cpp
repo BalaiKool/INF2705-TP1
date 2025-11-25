@@ -126,10 +126,6 @@ Material windowMat =
     2.0f
 };
 
-
-// TODO: Petit ajout à votre main.cpp
-
-
 Material bezierMat =
 {
     {1.0f, 1.0f, 1.0f, 0.0f},
@@ -180,20 +176,20 @@ BezierCurve curves[5] =
         glm::vec3(-12.2770, 1.4484, -13.2807)
     }
 };
+const unsigned int nPoints = 5; // Number of Points in curves
 
 // Définition des couleurs
 const vec4 red = { 1.f, 0.f, 0.f, 1.0f };
 const vec4 green = { 0.f, 1.f, 0.f, 1.0f };
 const vec4 blue = { 0.f, 0.f, 1.f, 1.0f };
 
-
-// TODO: Ajouter ces attributs
 unsigned int bezierNPoints = 3;
 unsigned int oldBezierNPoints = 0;
 
 int cameraMode = 0;
 float cameraAnimation = 0.f;
 bool isAnimatingCamera = false;
+vec3 resetCameraPosition = { -20.53f, 10.36f, -12.87f };
 
 struct App : public OpenGLApplication
 {
@@ -202,8 +198,8 @@ struct App : public OpenGLApplication
         , timerParticles_(0.0) // Initialiser à 0
         , nParticles_(0)       // Initialiser à 0
         , isDay_(true)
-        , cameraPosition_(17.f, 9.f, 4.5f)
-        , cameraOrientation_(-.3, 1.25f)
+        , cameraPosition_(resetCameraPosition)
+        , cameraOrientation_(-0.31f, 4.18f)
         , isMouseMotionEnabled_(false)
         , isQWERTY_(true)
     {
@@ -233,10 +229,11 @@ struct App : public OpenGLApplication
         glEnable(GL_CULL_FACE);
         glEnable(GL_STENCIL_TEST);
 
-        // Partie 1
         celShadingShader_.create();
         edgeEffectShader_.create();
         skyShader_.create();
+        bezierShader_.create();
+        grassShader_.create();
         particlesShader_.create();
         particlesUpdateShader_.create();
 
@@ -319,6 +316,13 @@ struct App : public OpenGLApplication
 
         lights_.allocate(&lightsData_, sizeof(lightsData_));
         lights_.setBindingIndex(1);
+        bezierVAO_ = 0;
+        bezierVBO_ = 0;
+        bezierVertexCount = 0;
+
+        buildAndUploadBezierMesh();
+
+        generateGrassPatches(110, 55, 0.9f);
 
         initParticles();
 
@@ -371,6 +375,7 @@ struct App : public OpenGLApplication
             edgeEffectShader_.reload();
             celShadingShader_.reload();
             skyShader_.reload();
+            grassShader_.reload();
             particlesShader_.reload();
             particlesUpdateShader_.reload();
             setLightingUniform();
@@ -387,8 +392,10 @@ struct App : public OpenGLApplication
     void onClose() override
     {
         glDeleteBuffers(1, &vbo_);
+        glDeleteBuffers(1, &bezierVBO_);
         glDeleteBuffers(1, &ebo_);
         glDeleteVertexArrays(1, &vao_);
+        glDeleteVertexArrays(1, &bezierVAO_);
     }
 
     // Appelée lors d'une touche de clavier.
@@ -581,7 +588,6 @@ struct App : public OpenGLApplication
         }
     }
 
-
     void drawStreetlights(glm::mat4& projView)
     {
         glm::mat4 view = getViewMatrix();
@@ -589,7 +595,6 @@ struct App : public OpenGLApplication
         streetlightTexture_.setWrap(GL_CLAMP_TO_EDGE);
         streetlightTexture_.enableMipmap();
         streetlightTexture_.setFiltering(GL_NEAREST_MIPMAP_NEAREST);
-        //streetlightTexture_.setFiltering(GL_NEAREST);
 
         glEnable(GL_STENCIL_TEST);
         glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
@@ -599,7 +604,6 @@ struct App : public OpenGLApplication
 
         celShadingShader_.use();
 
-        // Draw streetlights normally
         for (unsigned int i = 0; i < N_STREETLIGHTS; i++)
         {
             float x = lightsPosition[i];
@@ -624,7 +628,6 @@ struct App : public OpenGLApplication
             
         }
 
-        // Draw outlines using stencil
         glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
         glStencilMask(0x00);
         glEnable(GL_DEPTH_TEST);
@@ -657,9 +660,6 @@ struct App : public OpenGLApplication
         glEnable(GL_DEPTH_TEST);
         glDisable(GL_STENCIL_TEST);
     }
-
-
-
 
     void drawTrees(glm::mat4& projView)
     {
@@ -755,6 +755,66 @@ struct App : public OpenGLApplication
         grass_.draw();
     }
 
+    void drawGrass()
+    {
+        grassShader_.use();
+
+        glBindVertexArray(grassVAO);
+        glPatchParameteri(GL_PATCH_VERTICES, 3);
+        glDrawArrays(GL_PATCHES, 0, grassVertexCount);
+        glBindVertexArray(0);
+    }
+
+
+    void generateGrassPatches(int gridX, int gridZ, float spacing)
+    {
+        std::vector<Vertex> vertices;
+
+        float width = gridX * spacing;
+        float depth = gridZ * spacing;
+        float startX = -width / 2.0f;
+        float startZ = -depth / 2.0f;
+
+        for (int x = 0; x < gridX; ++x)
+        {
+            for (int z = 0; z < gridZ; ++z)
+            {
+                glm::vec3 center(startX + x * spacing, 0.0f, startZ + z * spacing);
+
+                if (center.z > -3.0f && center.z < 2.0f)
+                    continue;
+
+                glm::vec3 p0 = center + glm::vec3(0.f, 0.f, 0.f);
+                glm::vec3 p1 = center + glm::vec3(spacing, 0.f, 0.f);
+                glm::vec3 p2 = center + glm::vec3(spacing, 0.f, spacing);
+                glm::vec3 p3 = center + glm::vec3(0.f, 0.f, spacing);
+
+                vertices.push_back({ p0 });
+                vertices.push_back({ p1 });
+                vertices.push_back({ p2 });
+                vertices.push_back({ p0 });
+                vertices.push_back({ p2 });
+                vertices.push_back({ p3 });
+            }
+        }
+
+        grassVertexCount = static_cast<int>(vertices.size());
+
+        glGenVertexArrays(1, &grassVAO);
+        glGenBuffers(1, &grassVBO);
+
+        glBindVertexArray(grassVAO);
+        glBindBuffer(GL_ARRAY_BUFFER, grassVBO);
+        glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(Vertex), vertices.data(), GL_STATIC_DRAW);
+
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)0);
+
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        glBindVertexArray(0);
+    }
+
+
     void drawCar(glm::mat4& projView, glm::mat4& view)
     { 
         setMaterial(defaultMat);
@@ -766,6 +826,89 @@ struct App : public OpenGLApplication
         car_.update(deltaTime_);
         car_.draw(projView, view);
         }
+
+    void glDrawBezierLine(const glm::mat4& projView, const glm::mat4& view)
+    {
+        if (bezierVertexCount == 0) return;
+        bezierShader_.use();
+        GLint program = 0;
+        glGetIntegerv(GL_CURRENT_PROGRAM, &program);
+
+        glm::mat4 model = glm::mat4(1.0f);
+        glm::mat4 mvp = projView * model;
+
+        GLint locMVP = glGetUniformLocation(program, "mvp");
+        if (locMVP != -1)
+            glUniformMatrix4fv(locMVP, 1, GL_FALSE, glm::value_ptr(mvp));
+
+        GLint locColor = glGetUniformLocation(program, "color");
+        if (locColor != -1)
+            glUniform3f(locColor, 1.0f, 0.6f, 0.0f);
+
+        glBindVertexArray(bezierVAO_);
+
+        GLsizei vertsPerCurve = bezierNPoints + 1;
+
+        for (unsigned int i = 0; i < nPoints; ++i)
+        {
+            GLsizei start = i * vertsPerCurve;
+            glDrawArrays(GL_LINE_STRIP, start, vertsPerCurve);
+        }
+
+        glBindVertexArray(0);
+    }
+
+
+
+
+    vec3 casteljauPoints(const BezierCurve& c, float t) {
+        vec3 q01 = mix(c.p0, c.c0, t);
+        vec3 q12 = mix(c.c0, c.c1, t);
+        vec3 q23 = mix(c.c1, c.p1, t);
+
+        vec3 q012 = mix(q01, q12, t);
+        vec3 q123 = mix(q12, q23, t);
+
+        vec3 qf = mix(q012, q123, t);
+
+        return qf;
+    }
+
+    void buildAndUploadBezierMesh()
+    {
+        std::vector<glm::vec3> verts;
+        verts.reserve((bezierNPoints +1) * nPoints + bezierNPoints);
+
+        for (unsigned int ic = 0; ic < nPoints; ++ic)
+        {
+            const BezierCurve& c = curves[ic];
+            for (unsigned int s = 0; s <= bezierNPoints; ++s)
+            {
+                float t = (float)s / (float)bezierNPoints;
+                glm::vec3 p = casteljauPoints(c, t);
+                verts.push_back(p);
+            }
+        }
+
+        bezierVertexCount = verts.size();
+
+        if (bezierVAO_ == 0)
+        {
+            glGenVertexArrays(1, &bezierVAO_);
+            glGenBuffers(1, &bezierVBO_);
+        }
+
+        glBindVertexArray(bezierVAO_);
+        glBindBuffer(GL_ARRAY_BUFFER, bezierVBO_);
+
+        glBufferData(GL_ARRAY_BUFFER, verts.size() * sizeof(glm::vec3), verts.data(), GL_DYNAMIC_DRAW);
+
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (GLvoid*)0);
+
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        glBindVertexArray(0);
+    }
 
 
     glm::mat4 getViewMatrix()
@@ -782,7 +925,6 @@ struct App : public OpenGLApplication
 
     glm::mat4 getPerspectiveProjectionMatrix()
     {
-        // TODO: Pertinent de modifier la distance ici.
         const float far = 300.f;
 
         float screenRatio = static_cast<float>(window_.getSize().x) / static_cast<float>(window_.getSize().y);
@@ -1000,14 +1142,13 @@ struct App : public OpenGLApplication
     void sceneMain()
     {
         ImGui::Begin("Scene Parameters");
-        // TODO: À ajouter
         ImGui::SliderInt("Bezier Number Of Points", (int*)&bezierNPoints, 0, 16);
         if (ImGui::Button("Animate Camera"))
         {
             isAnimatingCamera = true;
             cameraMode = 1;
         }
-        //
+
         if (ImGui::Button("Toggle Day/Night"))
         {
             isDay_ = !isDay_;
@@ -1026,22 +1167,36 @@ struct App : public OpenGLApplication
         ImGui::End();
 
 
-        std::cout << "camera value: " << isAnimatingCamera << std::endl;
         if (isAnimatingCamera)
         {
-            
-            if (cameraAnimation < 5)
+            if (cameraAnimation == 0.f)
             {
-                // TODO: Animation de la caméra
-                // cameraPosition_ = ...
+                vec3 resetCameraPosition = cameraPosition_;
+            }
+            if (cameraAnimation < nPoints)
+            {
+                unsigned int animationIndex = (unsigned int)floor(cameraAnimation);
+                float localT = cameraAnimation - animationIndex;
+
+                cameraPosition_ = casteljauPoints(curves[animationIndex], localT);
+                glm::vec3 directionToCar = car_.position - cameraPosition_;
+
+                cameraOrientation_.y = M_PI + atan2(directionToCar.x, directionToCar.z);
+
+                float horizontalDistance = sqrt(directionToCar.x * directionToCar.x + directionToCar.z * directionToCar.z);
+                cameraOrientation_.x = atan2(directionToCar.y, horizontalDistance);
 
                 cameraAnimation += deltaTime_ / 3.0;
             }
             else
             {
                 // Remise à 0 de l'orientation
+                cameraPosition_ = resetCameraPosition;
                 glm::vec3 diff = car_.position - cameraPosition_;
                 cameraOrientation_.y = M_PI + atan2(diff.z, diff.x);
+
+                float horizontalDistance = sqrt(diff.x * diff.x + diff.z * diff.z);
+                cameraOrientation_.x = atan2(diff.y, horizontalDistance);
 
                 cameraAnimation = 0.f;
                 isAnimatingCamera = false;
@@ -1068,23 +1223,44 @@ struct App : public OpenGLApplication
         setMaterial(streetlightMat);
         drawStreetlights(projView);
 
+        CHECK_GL_ERROR;
         setMaterial(defaultMat);
         drawCar(projView, view);
+        CHECK_GL_ERROR;
 
         bool hasNumberOfSidesChanged = bezierNPoints != oldBezierNPoints;
         if (hasNumberOfSidesChanged)
         {
             oldBezierNPoints = bezierNPoints;
-
-            // TODO: Calcul et mise à jour de la courbe
+            buildAndUploadBezierMesh();
         }
 
-        // TODO: Dessin de la courbe
-        // glDraw...
+        setMaterial(bezierMat);
+        glDrawBezierLine(projView, view);
+        CHECK_GL_ERROR;
 
+        glm::mat4 model = glm::mat4(1.0f);
+        glm::mat4 mvp = proj * view * model;
 
-        // TODO: Dessin du gazon
-        // glDraw...
+        //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+
+        grassShader_.use();
+        grassShader_.setMatrices(mvp, model);
+        grassShader_.setModelView(view * model);
+        drawGrass();
+
+        //glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+        // Particles
+        vec3 exhaustPos = vec3(2.0f, 0.24f, -0.43f);
+        vec3 exhaustDir = vec3(1.0f, 0.0f, 0.0f);
+        CHECK_GL_ERROR;
+        updateParticleCounters();
+        CHECK_GL_ERROR;
+        updateParticles(exhaustPos, exhaustDir, car_.carModel);
+        CHECK_GL_ERROR;
+        drawParticles();
+        CHECK_GL_ERROR;
+        std::swap(particles_[0], particles_[1]);
 
         // Particles
         vec3 exhaustPos = vec3(2.0f, 0.24f, -0.43f);
@@ -1101,14 +1277,13 @@ struct App : public OpenGLApplication
     }
 
 
-
-    // TODO: Ajouter les attributs de vbo, ebo, vao nécessaire
-
 private:
     // Shaders
     EdgeEffect edgeEffectShader_;
     CelShading celShadingShader_;
     Sky skyShader_;
+    BasicShader bezierShader_;
+    GrassShader grassShader_;
     ParticlesShader particlesShader_;
     ParticlesUpdateShader particlesUpdateShader_;
 
@@ -1157,8 +1332,12 @@ private:
   
 
     GLuint vbo_, ebo_, vao_;
+    GLuint bezierVAO_, bezierVBO_;
+    size_t bezierVertexCount;
+    GLuint grassVAO = 0;
+    GLuint grassVBO = 0;
+    int grassVertexCount = 0;
 
-    // TP1
     Car car_;
 
     glm::vec3 cameraPosition_;

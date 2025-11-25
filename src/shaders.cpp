@@ -88,6 +88,43 @@ void CelShading::setMatrices(glm::mat4& mvp, glm::mat4& view, glm::mat4& model)
     glUniformMatrix3fv(normalULoc, 1, GL_TRUE, glm::value_ptr(glm::inverse(glm::mat3(modelView))));
 }
 
+void GrassShader::load()
+{
+    const char* VERTEX_SRC_PATH = "./shaders/grass.vs.glsl";
+    const char* TCS_SRC_PATH = "./shaders/grass.tcs.glsl";
+    const char* TES_SRC_PATH = "./shaders/grass.tes.glsl";
+    const char* GEOM_SRC_PATH = "./shaders/grass.gs.glsl";
+    const char* FRAGMENT_SRC_PATH = "./shaders/grass.fs.glsl";
+
+    name_ = "GrassShader";
+
+    loadShaderSource(GL_VERTEX_SHADER, VERTEX_SRC_PATH);
+    loadShaderSource(GL_TESS_CONTROL_SHADER, TCS_SRC_PATH);
+    loadShaderSource(GL_TESS_EVALUATION_SHADER, TES_SRC_PATH);
+    loadShaderSource(GL_GEOMETRY_SHADER, GEOM_SRC_PATH);
+    loadShaderSource(GL_FRAGMENT_SHADER, FRAGMENT_SRC_PATH);
+
+    link();
+}
+
+void GrassShader::getAllUniformLocations()
+{
+    mvpULoc = glGetUniformLocation(id_, "mvp");
+    modelViewULoc = glGetUniformLocation(id_, "modelView");
+
+}
+
+void GrassShader::setMatrices(glm::mat4& mvp, glm::mat4& model)
+{
+    glUniformMatrix4fv(mvpULoc, 1, GL_FALSE, glm::value_ptr(mvp));
+    glUniformMatrix4fv(modelULoc, 1, GL_FALSE, glm::value_ptr(model));
+}
+
+void GrassShader::setModelView(const glm::mat4& mv)
+{
+    glUniformMatrix4fv(modelViewULoc, 1, GL_FALSE, glm::value_ptr(mv));
+}
+
 void ParticlesShader::load()
 {
     const char* VERTEX_SRC_PATH = "./shaders/particlesDraw.vs.glsl";
