@@ -9,6 +9,19 @@
 // vous voulez dans les classes et mieux séparer le code.
 // Voir exemple avec le shader du tp1, considérant les variables uniformes dans le shader:
 
+// Exemple, à retirer plus tard
+class TransformShader : public ShaderProgram
+{
+public:
+    GLuint mvpULoc;
+    GLuint colorModULoc;
+
+protected:
+    virtual void load() override;
+    virtual void getAllUniformLocations() override;
+};
+
+
 class EdgeEffect : public ShaderProgram
 {
 public:
@@ -90,5 +103,36 @@ public:
 
 protected:
     virtual void load() override;
+    virtual void getAllUniformLocations() override;
+};
+class ParticlesShader : public ShaderProgram
+{
+public:
+    GLuint modelViewULoc = 0;
+    GLuint projectionULoc = 0;
+    GLuint texSamplerULoc = 0;
+    GLuint cameraRightULoc = 0;
+    GLuint cameraUpULoc = 0;
+
+    void setMatrices(const glm::mat4& modelView, const glm::mat4& projection, const glm::vec3& cameraRight, const glm::vec3& cameraUp);
+
+protected:
+    virtual void load() override;
+    virtual void getAllUniformLocations() override;
+};
+
+class ParticlesUpdateShader : public ShaderProgram
+{
+public:
+    GLuint timeULoc;
+    GLuint deltaTimeULoc;
+    GLuint emitterPosULoc;
+    GLuint emitterDirULoc;
+
+protected:
+    // Load shader and link
+    virtual void load() override;
+
+    // Get uniform locations after linking
     virtual void getAllUniformLocations() override;
 };

@@ -24,6 +24,7 @@
 #include "shaders.hpp"
 #include "textures.hpp"
 #include "uniform_buffer.hpp"
+#include "shader_storage_buffer.hpp"
 
 #define CHECK_GL_ERROR printGLError(__FILE__, __LINE__)
 
@@ -193,7 +194,10 @@ vec3 resetCameraPosition = { -20.53f, 10.36f, -12.87f };
 struct App : public OpenGLApplication
 {
     App()
-        : isDay_(true)
+        : totalTime(0.0)       // Initialiser à 0
+        , timerParticles_(0.0) // Initialiser à 0
+        , nParticles_(0)       // Initialiser à 0
+        , isDay_(true)
         , cameraPosition_(resetCameraPosition)
         , cameraOrientation_(-0.31f, 4.18f)
         , isMouseMotionEnabled_(false)
@@ -227,10 +231,11 @@ struct App : public OpenGLApplication
 
         celShadingShader_.create();
         edgeEffectShader_.create();
-        skyShader_.create(); 
-        bezierShader_.create();
         skyShader_.create();
+        bezierShader_.create();
         grassShader_.create();
+        particlesShader_.create();
+        particlesUpdateShader_.create();
 
         car_.celShadingShader = &celShadingShader_;
         car_.edgeEffectShader = &edgeEffectShader_;
@@ -319,7 +324,44 @@ struct App : public OpenGLApplication
 
         generateGrassPatches(110, 55, 0.9f);
 
-        glEnable(GL_PROGRAM_POINT_SIZE);
+        for (int i = 0; i < 2; i++)
+        {
+            if (i == 0)
+            {
+                Particle* zeroParticles = new Particle[MAX_PARTICLES_]();
+                particles_[i].allocate(zeroParticles, MAX_PARTICLES_ * sizeof(Particle), GL_DYNAMIC_COPY);
+                delete[] zeroParticles;
+            }
+            else
+            {
+                particles_[i].allocate(nullptr, MAX_PARTICLES_ * sizeof(Particle), GL_DYNAMIC_COPY);
+            }
+        }
+
+        glGenVertexArrays(1, &vaoParticles_);
+        glBindVertexArray(vaoParticles_);
+
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Particle), (void*)offsetof(Particle, position));
+
+        glEnableVertexAttribArray(1);
+        glVertexAttribPointer(1, 1, GL_FLOAT, GL_FALSE, sizeof(Particle), (void*)offsetof(Particle, zOrientation));
+
+        glEnableVertexAttribArray(2);
+        glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(Particle), (void*)offsetof(Particle, color));
+
+        glEnableVertexAttribArray(3);
+        glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, sizeof(Particle), (void*)offsetof(Particle, size));
+
+        glBindVertexArray(0);
+
+        particlesTexture_.load("../textures/smoke.png");
+        particlesTexture_.use();
+
+        particlesTexture_.setFiltering(GL_LINEAR);
+        particlesTexture_.setWrap(GL_CLAMP_TO_EDGE);
+
+        glEnable(GL_PROGRAM_POINT_SIZE); // pour être en mesure de modifier gl_PointSize dans les shaders
 
         CHECK_GL_ERROR;
     }
@@ -369,7 +411,8 @@ struct App : public OpenGLApplication
             celShadingShader_.reload();
             skyShader_.reload();
             grassShader_.reload();
-
+            particlesShader_.reload();
+            particlesUpdateShader_.reload();
             setLightingUniform();
             CHECK_GL_ERROR;
         }
@@ -1033,6 +1076,89 @@ struct App : public OpenGLApplication
         material_.updateData(&mat, 0, sizeof(Material));
     }
 
+    void initParticles() {
+        glGenBuffers(1, &ssboRead);
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboRead);
+        glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(Particle) * nParticles_, nullptr, GL_DYNAMIC_DRAW);
+
+        glGenBuffers(1, &ssboWrite);
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboWrite);
+        glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(Particle) * nParticles_, nullptr, GL_DYNAMIC_DRAW);
+
+        glGenVertexArrays(1, &vaoParticles_);
+        glBindVertexArray(vaoParticles_);
+
+        glEnableVertexAttribArray(0); // position
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Particle), (void*)offsetof(Particle, position));
+
+        glEnableVertexAttribArray(1); // couleur
+        glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(Particle), (void*)offsetof(Particle, color));
+
+        glEnableVertexAttribArray(2); // taille
+        glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Particle), (void*)offsetof(Particle, size));
+
+        glBindVertexArray(0);
+    }
+
+    void updateParticleCounters()
+    {
+        totalTime += deltaTime_;
+        timerParticles_ += deltaTime_;
+
+        const float spawnInterval = 0.2f;
+        unsigned int particlesToAdd = timerParticles_ / spawnInterval;
+        timerParticles_ -= particlesToAdd * spawnInterval;
+
+        nParticles_ += particlesToAdd;
+        if (nParticles_ > MAX_PARTICLES_)
+            nParticles_ = MAX_PARTICLES_;
+    }
+
+    void updateParticles(glm::vec3 exhaustPos, glm::vec3 exhaustDir, const glm::mat4& carModel)
+    {
+        particlesUpdateShader_.use();
+
+        glm::vec3 worldPos = glm::vec3(carModel * glm::vec4(exhaustPos, 1.0f));
+        glm::vec3 worldDir = glm::vec3(carModel * glm::vec4(exhaustDir, 0.0f));
+
+        glUniform1f(particlesUpdateShader_.timeULoc, totalTime);
+        glUniform1f(particlesUpdateShader_.deltaTimeULoc, deltaTime_);
+        glUniform3fv(particlesUpdateShader_.emitterPosULoc, 1, glm::value_ptr(worldPos));
+        glUniform3fv(particlesUpdateShader_.emitterDirULoc, 1, glm::value_ptr(worldDir));
+
+        particles_[0].setBindingIndex(0);
+        particles_[1].setBindingIndex(1);
+
+        unsigned int workGroups = (MAX_PARTICLES_ + 63) / 64;
+        glDispatchCompute(workGroups, 1, 1);
+
+        glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+    }
+
+
+    void drawParticles()
+    {
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        glDepthMask(GL_FALSE);
+
+        particlesShader_.use();
+        glBindVertexArray(vaoParticles_);
+        particlesTexture_.use();
+
+        glm::mat4 V = getViewMatrix();
+        glm::mat4 P = getPerspectiveProjectionMatrix();
+
+        glUniformMatrix4fv(particlesShader_.modelViewULoc, 1, GL_FALSE, glm::value_ptr(V));
+        glUniformMatrix4fv(particlesShader_.projectionULoc, 1, GL_FALSE, glm::value_ptr(P));
+
+        glDrawArrays(GL_POINTS, 0, nParticles_);
+
+        glDepthMask(GL_TRUE);
+        glDisable(GL_BLEND);
+    }
+
+
     void sceneMain()
     {
         ImGui::Begin("Scene Parameters");
@@ -1144,6 +1270,15 @@ struct App : public OpenGLApplication
         drawGrass();
 
         //glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+        // Particles
+        vec3 exhaustPos = vec3(2.0f, 0.24f, -0.43f);
+        vec3 exhaustDir = vec3(1.0f, 0.0f, 0.0f);
+
+        updateParticleCounters();
+        updateParticles(exhaustPos, exhaustDir, car_.carModel);
+        drawParticles();
+        std::swap(particles_[0], particles_[1]);
+
     }
 
 
@@ -1154,6 +1289,8 @@ private:
     Sky skyShader_;
     BasicShader bezierShader_;
     GrassShader grassShader_;
+    ParticlesShader particlesShader_;
+    ParticlesUpdateShader particlesUpdateShader_;
 
     // Textures
     Texture2D grassTexture_;
@@ -1165,10 +1302,23 @@ private:
     Texture2D streetlightLightTexture_;
     TextureCubeMap skyboxTexture_;
     TextureCubeMap skyboxNightTexture_;
+    Texture2D particlesTexture_;
 
     // Uniform buffers
     UniformBuffer material_;
     UniformBuffer lights_;
+
+    GLuint vaoParticles_;
+    GLuint ssboRead, ssboWrite;
+
+    float totalTime;
+    float timerParticles_;
+
+    static const unsigned int MAX_PARTICLES_ = 64;
+    unsigned int nParticles_;
+
+    // Ssbo
+    ShaderStorageBuffer particles_[2];
 
     struct {
         DirectionalLight dirLight;
@@ -1219,6 +1369,17 @@ private:
     bool isMouseMotionEnabled_;
     bool isQWERTY_;
 
+    // Ne pas modifier
+    struct Particle
+    {
+        glm::vec3 position;
+        GLfloat zOrientation;
+        glm::vec4 velocity; // vec3, but padded
+        glm::vec4 color;
+        glm::vec2 size;
+        GLfloat timeToLive;
+        GLfloat maxTimeToLive;
+    };
 };
 
 

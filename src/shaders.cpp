@@ -123,4 +123,57 @@ void GrassShader::setMatrices(glm::mat4& mvp, glm::mat4& model)
 void GrassShader::setModelView(const glm::mat4& mv)
 {
     glUniformMatrix4fv(modelViewULoc, 1, GL_FALSE, glm::value_ptr(mv));
+}void ParticlesShader::load()
+{
+    const char* VERTEX_SRC_PATH = "./shaders/particlesDraw.vs.glsl";
+    const char* GEOMETRY_SRC_PATH = "./shaders/particlesDraw.gs.glsl";
+    const char* FRAGMENT_SRC_PATH = "./shaders/particlesDraw.fs.glsl";
+
+    name_ = "Particles";
+
+    loadShaderSource(GL_VERTEX_SHADER, VERTEX_SRC_PATH);
+    loadShaderSource(GL_GEOMETRY_SHADER, GEOMETRY_SRC_PATH);
+    loadShaderSource(GL_FRAGMENT_SHADER, FRAGMENT_SRC_PATH);
+    link();
+}
+
+void ParticlesShader::getAllUniformLocations()
+{
+    modelViewULoc = glGetUniformLocation(id_, "modelView");
+    projectionULoc = glGetUniformLocation(id_, "projection");
+    texSamplerULoc = glGetUniformLocation(id_, "textureSampler");
+    cameraRightULoc = glGetUniformLocation(id_, "cameraRight");
+    cameraUpULoc = glGetUniformLocation(id_, "cameraUp");
+}
+
+void ParticlesShader::setMatrices(const glm::mat4& modelView,
+    const glm::mat4& projection,
+    const glm::vec3& cameraRight,
+    const glm::vec3& cameraUp)
+{
+    glUniformMatrix4fv(modelViewULoc, 1, GL_FALSE, glm::value_ptr(modelView));
+    glUniformMatrix4fv(projectionULoc, 1, GL_FALSE, glm::value_ptr(projection));
+    glUniform3fv(cameraRightULoc, 1, glm::value_ptr(cameraRight));
+    glUniform3fv(cameraUpULoc, 1, glm::value_ptr(cameraUp));
+}
+
+void ParticlesUpdateShader::load()
+{
+    const char* COMPUTE_SRC_PATH = "./shaders/particlesUpdate.cs.glsl";
+
+    name_ = "ParticlesUpdate";
+    std::cout << "Loading compute shader: " << COMPUTE_SRC_PATH << std::endl;
+
+    loadShaderSource(GL_COMPUTE_SHADER, COMPUTE_SRC_PATH);
+    link();
+
+    std::cout << "Compute shader loaded with ID: " << id_ << std::endl;
+}
+
+void ParticlesUpdateShader::getAllUniformLocations()
+{
+    timeULoc = glGetUniformLocation(id_, "time");
+    deltaTimeULoc = glGetUniformLocation(id_, "deltaTime");
+    emitterPosULoc = glGetUniformLocation(id_, "emitterPosition");
+    emitterDirULoc = glGetUniformLocation(id_, "emitterDirection");
 }
