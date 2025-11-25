@@ -86,6 +86,39 @@
     <None Include="shaders\transform.vs.glsl">
       <Filter>Shader Source Files</Filter>
     </None>
+    <None Include="shaders\edge.fs.glsl">
+      <Filter>Shader Source Files</Filter>
+    </None>
+    <None Include="shaders\edge.vs.glsl">
+      <Filter>Shader Source Files</Filter>
+    </None>
+    <None Include="shaders\grass.fs.glsl">
+      <Filter>Shader Source Files</Filter>
+    </None>
+    <None Include="shaders\grass.gs.glsl">
+      <Filter>Shader Source Files</Filter>
+    </None>
+    <None Include="shaders\grass.tcs.glsl">
+      <Filter>Shader Source Files</Filter>
+    </None>
+    <None Include="shaders\grass.tes.glsl">
+      <Filter>Shader Source Files</Filter>
+    </None>
+    <None Include="shaders\grass.vs.glsl">
+      <Filter>Shader Source Files</Filter>
+    </None>
+    <None Include="shaders\phong.fs.glsl">
+      <Filter>Shader Source Files</Filter>
+    </None>
+    <None Include="shaders\phong.vs.glsl">
+      <Filter>Shader Source Files</Filter>
+    </None>
+    <None Include="shaders\sky.fs.glsl">
+      <Filter>Shader Source Files</Filter>
+    </None>
+    <None Include="shaders\sky.vs.glsl">
+      <Filter>Shader Source Files</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\inf2705\OpenGLApplication.hpp">

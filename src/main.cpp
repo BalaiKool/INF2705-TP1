@@ -232,7 +232,8 @@ struct App : public OpenGLApplication
         // Partie 1
         celShadingShader_.create();
         edgeEffectShader_.create();
-        skyShader_.create(); 
+        skyShader_.create();
+        grassShader_.create();
 
         car_.celShadingShader = &celShadingShader_;
         car_.edgeEffectShader = &edgeEffectShader_;
@@ -318,6 +319,7 @@ struct App : public OpenGLApplication
 
         // TODO: Initialisation des meshes (béziers, patches)
 
+        generateGrassPatches(110, 55, 0.9f);
 
         glEnable(GL_PROGRAM_POINT_SIZE); // pour être en mesure de modifier gl_PointSize dans les shaders
 
@@ -368,6 +370,7 @@ struct App : public OpenGLApplication
             edgeEffectShader_.reload();
             celShadingShader_.reload();
             skyShader_.reload();
+            grassShader_.reload();
 
             setLightingUniform();
             CHECK_GL_ERROR;
@@ -751,6 +754,66 @@ struct App : public OpenGLApplication
         grass_.draw();
     }
 
+    void drawGrass()
+    {
+        grassShader_.use();
+
+        glBindVertexArray(grassVAO);
+        glPatchParameteri(GL_PATCH_VERTICES, 3);
+        glDrawArrays(GL_PATCHES, 0, grassVertexCount);
+        glBindVertexArray(0);
+    }
+
+
+    void generateGrassPatches(int gridX, int gridZ, float spacing)
+    {
+        std::vector<Vertex> vertices;
+
+        float width = gridX * spacing;
+        float depth = gridZ * spacing;
+        float startX = -width / 2.0f;
+        float startZ = -depth / 2.0f;
+
+        for (int x = 0; x < gridX; ++x)
+        {
+            for (int z = 0; z < gridZ; ++z)
+            {
+                glm::vec3 center(startX + x * spacing, 0.0f, startZ + z * spacing);
+
+                if (center.z > -3.0f && center.z < 2.0f)
+                    continue;
+
+                glm::vec3 p0 = center + glm::vec3(0.f, 0.f, 0.f);
+                glm::vec3 p1 = center + glm::vec3(spacing, 0.f, 0.f);
+                glm::vec3 p2 = center + glm::vec3(spacing, 0.f, spacing);
+                glm::vec3 p3 = center + glm::vec3(0.f, 0.f, spacing);
+
+                vertices.push_back({ p0 });
+                vertices.push_back({ p1 });
+                vertices.push_back({ p2 });
+                vertices.push_back({ p0 });
+                vertices.push_back({ p2 });
+                vertices.push_back({ p3 });
+            }
+        }
+
+        grassVertexCount = static_cast<int>(vertices.size());
+
+        glGenVertexArrays(1, &grassVAO);
+        glGenBuffers(1, &grassVBO);
+
+        glBindVertexArray(grassVAO);
+        glBindBuffer(GL_ARRAY_BUFFER, grassVBO);
+        glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(Vertex), vertices.data(), GL_STATIC_DRAW);
+
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)0);
+
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        glBindVertexArray(0);
+    }
+
+
     void drawCar(glm::mat4& projView, glm::mat4& view)
     { 
         setMaterial(defaultMat);
@@ -982,7 +1045,16 @@ struct App : public OpenGLApplication
 
 
         // TODO: Dessin du gazon
-        // glDraw...
+        glm::mat4 model = glm::mat4(1.0f);
+        glm::mat4 mvp = proj * view * model;
+
+        //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+
+        grassShader_.use();
+        grassShader_.setMatrices(mvp, model);
+        drawGrass();
+
+        //glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     }
 
 
@@ -994,6 +1066,7 @@ private:
     EdgeEffect edgeEffectShader_;
     CelShading celShadingShader_;
     Sky skyShader_;
+    GrassShader grassShader_;
 
     // Textures
     Texture2D grassTexture_;
@@ -1027,6 +1100,9 @@ private:
   
 
     GLuint vbo_, ebo_, vao_;
+    GLuint grassVAO = 0;
+    GLuint grassVBO = 0;
+    int grassVertexCount = 0;
 
     // TP1
     Car car_;

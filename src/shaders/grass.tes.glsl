@@ -1,16 +1,22 @@
 #version 400 core
 
-// TODO: À remplir
-// layout() in;
+layout(triangles) in;
 
 out ATTRIBS_TES_OUT
 {
-    // TODO: Ajouter les attributs si nécessaire
+    vec3 worldPos;
 } attribsOut;
 
 uniform mat4 mvp;
 
 void main()
 {
-    // TODO: Effectuer l'interpolation des points avec gl_TessCoord
+    vec3 p0 = gl_in[0].gl_Position.xyz;
+    vec3 p1 = gl_in[1].gl_Position.xyz;
+    vec3 p2 = gl_in[2].gl_Position.xyz;
+
+    vec3 pos = p0 * gl_TessCoord.x + p1 * gl_TessCoord.y + p2 * gl_TessCoord.z;
+
+    attribsOut.worldPos = pos;
+    gl_Position = mvp * vec4(pos, 1.0);
 }

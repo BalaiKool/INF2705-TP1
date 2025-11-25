@@ -9,19 +9,6 @@
 // vous voulez dans les classes et mieux séparer le code.
 // Voir exemple avec le shader du tp1, considérant les variables uniformes dans le shader:
 
-// Exemple, à retirer plus tard
-class TransformShader : public ShaderProgram
-{
-public:
-    GLuint mvpULoc;
-    GLuint colorModULoc;
-
-protected:
-    virtual void load() override;
-    virtual void getAllUniformLocations() override;
-};
-
-
 class EdgeEffect : public ShaderProgram
 {
 public:
@@ -70,3 +57,18 @@ protected:
     virtual void assignAllUniformBlockIndexes() override;
 };
 
+class GrassShader : public ShaderProgram
+{
+public:
+    GLuint mvpULoc = 0;
+    GLuint modelULoc = 0;
+    GLuint timeULoc = 0;
+
+    inline void use() { glUseProgram(id_); }
+
+    void setMatrices(glm::mat4& mvp, glm::mat4& model);
+
+protected:
+    virtual void load() override;
+    virtual void getAllUniformLocations() override;
+};
