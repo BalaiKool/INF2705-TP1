@@ -63,10 +63,12 @@ public:
     GLuint mvpULoc = 0;
     GLuint modelULoc = 0;
     GLuint timeULoc = 0;
+    GLint modelViewULoc;
 
     inline void use() { glUseProgram(id_); }
 
     void setMatrices(glm::mat4& mvp, glm::mat4& model);
+    void setModelView(const glm::mat4& mv);
 
 protected:
     virtual void load() override;

@@ -110,10 +110,17 @@ void GrassShader::load()
 void GrassShader::getAllUniformLocations()
 {
     mvpULoc = glGetUniformLocation(id_, "mvp");
+    modelViewULoc = glGetUniformLocation(id_, "modelView");
+
 }
 
 void GrassShader::setMatrices(glm::mat4& mvp, glm::mat4& model)
 {
     glUniformMatrix4fv(mvpULoc, 1, GL_FALSE, glm::value_ptr(mvp));
     glUniformMatrix4fv(modelULoc, 1, GL_FALSE, glm::value_ptr(model));
+}
+
+void GrassShader::setModelView(const glm::mat4& mv)
+{
+    glUniformMatrix4fv(modelViewULoc, 1, GL_FALSE, glm::value_ptr(mv));
 }

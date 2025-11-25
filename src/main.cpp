@@ -1052,6 +1052,7 @@ struct App : public OpenGLApplication
 
         grassShader_.use();
         grassShader_.setMatrices(mvp, model);
+        grassShader_.setModelView(view * model);
         drawGrass();
 
         //glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
