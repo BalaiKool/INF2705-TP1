@@ -64,12 +64,9 @@ void main()
     p.zOrientation += 0.5 * deltaTime;
     p.color.rgb = mix(vec3(1.0), vec3(0.5), life01);
 
-    if (life01 > 0.8)
-        p.color.a = smoothstep(1.0, 0.8, life01);
-    else if (life01 < 0.2)
-        p.color.a = smoothstep(0.0, 0.2, life01);
-    else
-        p.color.a = 0.2;
+    float s = smoothstep(0.0, 1.0, life01);
+    float opacity = s * (1.0 - s);
+    p.color.a = opacity * 2.0;
 
     p.size = mix(vec2(0.5), vec2(0.2), life01);
 
