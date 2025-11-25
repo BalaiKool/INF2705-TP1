@@ -194,13 +194,14 @@ unsigned int oldBezierNPoints = 0;
 int cameraMode = 0;
 float cameraAnimation = 0.f;
 bool isAnimatingCamera = false;
+vec3 resetCameraPosition = { -20.53f, 10.36f, -12.87f };
 
 struct App : public OpenGLApplication
 {
     App()
         : isDay_(true)
-        , cameraPosition_(17.f, 9.f, 4.5f)
-        , cameraOrientation_(-.3, 1.25f)
+        , cameraPosition_(resetCameraPosition)
+        , cameraOrientation_(-0.31f, 4.18f)
         , isMouseMotionEnabled_(false)
         , isQWERTY_(true)
     {
@@ -381,6 +382,11 @@ struct App : public OpenGLApplication
         ImGui::End();
 
         sceneMain();
+        std::cout << "Camera: (" << cameraPosition_.x << ", "
+            << cameraPosition_.y << ", "
+            << cameraPosition_.z << ")" << std::endl;
+        std::cout << "orientation: (" << cameraOrientation_.x << ", "
+            << cameraOrientation_.y <<  ")" << std::endl;
         CHECK_GL_ERROR;
     }
 
@@ -787,10 +793,9 @@ struct App : public OpenGLApplication
 
         glBindVertexArray(bezierVAO_);
 
-        const unsigned int nCurves = 5;
         GLsizei vertsPerCurve = bezierNPoints + 1;
 
-        for (unsigned int i = 0; i < nCurves; ++i)
+        for (unsigned int i = 0; i < nPoints; ++i)
         {
             GLsizei start = i * vertsPerCurve;
             glDrawArrays(GL_LINE_STRIP, start, vertsPerCurve);
@@ -1017,19 +1022,42 @@ struct App : public OpenGLApplication
 
         if (isAnimatingCamera)
         {
-            
-            if (cameraAnimation < 5)
+            if (cameraAnimation == 0.f)
+            {
+                vec3 resetCameraPosition = cameraPosition_;
+            }
+            if (cameraAnimation < nPoints)
             {
                 // TODO: Animation de la caméra
-                // cameraPosition_ = ...
+                unsigned int animationIndex = (unsigned int)floor(cameraAnimation);
+                float localT = cameraAnimation - animationIndex;
+
+                // S'assurer qu'on ne dépasse pas
+                if (animationIndex >= nPoints) {
+                    animationIndex = nPoints - 1;
+                    localT = 1.0f;
+                }
+
+                cameraPosition_ = casteljauPoints(curves[animationIndex], localT);
+                glm::vec3 directionToCar = car_.position - cameraPosition_;
+
+                cameraOrientation_.y = M_PI + atan2(directionToCar.x, directionToCar.z);
+
+                // Calculer l'orientation verticale (pitch)
+                float horizontalDistance = sqrt(directionToCar.x * directionToCar.x + directionToCar.z * directionToCar.z);
+                cameraOrientation_.x = atan2(directionToCar.y, horizontalDistance);
 
                 cameraAnimation += deltaTime_ / 3.0;
             }
             else
             {
                 // Remise à 0 de l'orientation
+                cameraPosition_ = resetCameraPosition;
                 glm::vec3 diff = car_.position - cameraPosition_;
                 cameraOrientation_.y = M_PI + atan2(diff.z, diff.x);
+
+                float horizontalDistance = sqrt(diff.x * diff.x + diff.z * diff.z);
+                cameraOrientation_.x = atan2(diff.y, horizontalDistance);
 
                 cameraAnimation = 0.f;
                 isAnimatingCamera = false;
@@ -1071,7 +1099,7 @@ struct App : public OpenGLApplication
         }
 
         // TODO: Dessin de la courbe
-        //setMaterial(bezierMat);
+        setMaterial(bezierMat);
         glDrawBezierLine(projView, view);
         CHECK_GL_ERROR;
 
