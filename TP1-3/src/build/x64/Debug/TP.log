@@ -1,0 +1,31 @@
+﻿  car.cpp
+C:\Users\ppngd\Documents\2025-2027 - Poly\INF2705 - Infographie\INF2705-TP1\src\car.hpp(3,10): error C1083: Cannot open include file: 'glbinding/gl/gl.h': No such file or directory
+  (compiling source file 'car.cpp')
+  
+  main.cpp
+C:\Users\ppngd\Documents\2025-2027 - Poly\INF2705 - Infographie\INF2705-TP1\src\main.cpp(12,10): error C1083: Cannot open include file: 'glm/glm.hpp': No such file or directory
+  model.cpp
+C:\Users\ppngd\Documents\2025-2027 - Poly\INF2705 - Infographie\INF2705-TP1\src\model.hpp(3,10): error C1083: Cannot open include file: 'glbinding/gl/gl.h': No such file or directory
+  (compiling source file 'model.cpp')
+  
+  shaders.cpp
+C:\Users\ppngd\Documents\2025-2027 - Poly\INF2705 - Infographie\INF2705-TP1\src\shader_program.hpp(1,10): error C1083: Cannot open include file: 'glbinding/gl/gl.h': No such file or directory
+  (compiling source file 'shaders.cpp')
+  
+  shader_program.cpp
+C:\Users\ppngd\Documents\2025-2027 - Poly\INF2705 - Infographie\INF2705-TP1\src\shader_program.hpp(1,10): error C1083: Cannot open include file: 'glbinding/gl/gl.h': No such file or directory
+  (compiling source file 'shader_program.cpp')
+  
+  shader_storage_buffer.cpp
+C:\Users\ppngd\Documents\2025-2027 - Poly\INF2705 - Infographie\INF2705-TP1\src\shader_storage_buffer.hpp(4,10): error C1083: Cannot open include file: 'glbinding/gl/gl.h': No such file or directory
+  (compiling source file 'shader_storage_buffer.cpp')
+  
+  textures.cpp
+C:\Users\ppngd\Documents\2025-2027 - Poly\INF2705 - Infographie\INF2705-TP1\src\textures.hpp(4,10): error C1083: Cannot open include file: 'glbinding/gl/gl.h': No such file or directory
+  (compiling source file 'textures.cpp')
+  
+  uniform_buffer.cpp
+C:\Users\ppngd\Documents\2025-2027 - Poly\INF2705 - Infographie\INF2705-TP1\src\uniform_buffer.hpp(4,10): error C1083: Cannot open include file: 'glbinding/gl/gl.h': No such file or directory
+  (compiling source file 'uniform_buffer.cpp')
+  
+  Generating Code...
