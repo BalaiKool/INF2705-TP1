@@ -114,14 +114,31 @@ struct App : public OpenGLApplication
         }
     }
 	// Appelée à chaque trame. Le buffer swap est fait juste après.
-	void drawFrame() override
-	{
+    void drawFrame() override
+    {
+        static sf::Time lastTime = clock.getElapsedTime();
+        sf::Time now = clock.getElapsedTime();
+        deltaTime_ = (now - lastTime).asSeconds();
+        lastTime = now;
+        
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         ImGui::Begin("Scene Parameters");
+
+        ImGui::Text("Vitesse Rotation");
+        float rotationDeg = glm::degrees(crystal_.rotationSpeed);
+        ImGui::SliderFloat("##RotationSpeed", &rotationDeg, 0.0f, 360.0f);
+
+        ImGui::Text("Vitesse Flottaison");
+        ImGui::SliderFloat("##FloatSpeed", &crystal_.floatSpeed, 0.0f, 5.0f);
+
+        ImGui::Text("Amplitude Flottaison");
+        ImGui::SliderFloat("##FloatAmplitude", &crystal_.floatAmplitude, 0.0f, 1.0f);
+
         ImGui::End();
-        
+
+
         sceneMain();
-	}
+    }
 
 	// Appelée lorsque la fenêtre se ferme.
 	void onClose() override
@@ -334,17 +351,24 @@ struct App : public OpenGLApplication
     {
         glUseProgram(transformSP_);
 
-        glUniformMatrix4fv(mvpUniformLocation_, 1, GL_FALSE, glm::value_ptr(projView));
+        crystal_.update(deltaTime_);
+
+        glm::mat4 model = glm::translate(glm::mat4(1.0f), crystal_.position);
+        model = glm::rotate(model, crystal_.orientation.y, glm::vec3(0.f, 1.f, 0.f));
+        model = glm::scale(model, glm::vec3(4.0f));
+
+        glm::mat4 mvp = projView * model;
+        glUniformMatrix4fv(mvpUniformLocation_, 1, GL_FALSE, glm::value_ptr(mvp));
 
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, crystalTexture_);
         glUniform1i(glGetUniformLocation(transformSP_, "uTexture"), 0);
 
-        crystal_.update(deltaTime_);
         crystal_.draw(projView);
 
         glBindTexture(GL_TEXTURE_2D, 0);
     }
+
 
     
         
@@ -392,6 +416,9 @@ private:
     Crystal crystal_;
 
     GLuint crystalTexture_;
+
+    sf::Clock clock;
+    float deltaTime_;
 
     // Imgui var
     const char* const SCENE_NAMES[1] = {

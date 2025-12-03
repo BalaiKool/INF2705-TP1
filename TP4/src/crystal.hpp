@@ -26,6 +26,11 @@ public:
     glm::vec3 position;
     glm::vec2 orientation;
 
+    float rotationSpeed = glm::radians(20.f);
+    float floatSpeed = 0.2f;
+    float floatAmplitude = 0.25f;
+    float floatPhase = 0.0f;
+
     GLuint colorModUniformLocation;
     GLuint mvpUniformLocation;
 };

@@ -18,17 +18,14 @@ void Crystal::loadModels()
 
 void Crystal::update(float deltaTime)
 {
-    // Optional animation
+    orientation.y += rotationSpeed * deltaTime;
+
+    floatPhase += floatSpeed * deltaTime * glm::two_pi<float>();
+    position.y = sin(floatPhase) * floatAmplitude;
 }
 
 void Crystal::draw(glm::mat4& projView)
 {
-    mat4 crystalTransform = translate(mat4(1.0f), position);
-    crystalTransform = rotate(crystalTransform, orientation.y, vec3(0.f, 1.f, 0.f));
-    crystalTransform = scale(crystalTransform, vec3(4.0f)); // adjust scale if needed
-
-    mat4 crystalMVP = projView * crystalTransform;
-
     crystal_.draw();
 }
 

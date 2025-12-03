@@ -34,7 +34,7 @@ void Model::load(const char* path)
         vtx.push_back(pv);
     }
 
-    // UVs
+    // --- Compute UVs based on your texture layout ---
     float minY = FLT_MAX, maxY = -FLT_MAX;
     for (auto& v : vtx) {
         minY = std::min(minY, v.pos.y);
@@ -46,25 +46,30 @@ void Model::load(const char* path)
     {
         float u, vCoord;
 
+        // Top hex (blue) in middle of texture
         if (v.pos.y > maxY - height * 0.1f)
         {
-            u = 0.75f + (v.pos.x + 0.5f) * 0.125f;
-            vCoord = 0.5f + (v.pos.z + 0.5f) * 0.125f;
+            u = 0.5f + (v.pos.x) * 0.1f;      // adjust to fit top hex width
+            vCoord = 0.75f + (v.pos.z) * 0.1f; // adjust to fit top hex vertical
         }
-        else if (v.pos.y < minY + height * 0.1f)
+        // Bottom hex (red) underneath
+        else if (v.pos.y < minY + height * 0.15f)
         {
-            u = 0.75f + (v.pos.x + 0.5f) * 0.125f;
-            vCoord = 0.375f + (v.pos.z + 0.5f) * 0.125f;
+            u = 0.5f + (v.pos.x) * 0.08f;
+            vCoord = 0.55f + (v.pos.z) * 0.08f;
         }
+        // Side trapezoids (green)
         else
         {
-            float theta = atan2(v.pos.z, v.pos.x);
-            u = (theta + glm::pi<float>()) / (2.0f * glm::pi<float>());
-            vCoord = (v.pos.y - minY) / ((2.0f / 3.0f) * height);
+            float theta = atan2(v.pos.z, v.pos.x); // -pi..pi
+            u = (theta + glm::pi<float>()) / (2.0f * glm::pi<float>()); // wrap 0..1 horizontally
+            float yNorm = (v.pos.y - minY) / height;
+            vCoord = yNorm * 0.75f; // lower 75% of texture for sides
         }
 
         v.uv = glm::vec2(u, vCoord);
     }
+
 
     std::vector<GLuint> idx;
     idx.reserve(facesIndices.size() * 3);
