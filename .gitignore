@@ -1,7 +1,7 @@
 .vs
-*/.vs
-*/build
-*/out
+**/.vs
+**/build
+**/out
 *.user
 *.ini
 INF2705_remise_tp*

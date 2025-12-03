@@ -167,6 +167,7 @@
     <ClCompile Include="..\imgui\imgui_impl_opengl3.cpp" />
     <ClCompile Include="..\imgui\imgui_tables.cpp" />
     <ClCompile Include="..\imgui\imgui_widgets.cpp" />
+    <ClCompile Include="crystal.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -178,6 +179,8 @@
     <ClInclude Include="..\inf2705\OpenGLApplication.hpp" />
     <ClInclude Include="..\inf2705\sfml_utils.hpp" />
     <ClInclude Include="..\inf2705\utils.hpp" />
+    <ClInclude Include="crystal.hpp" />
+    <ClInclude Include="model.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
