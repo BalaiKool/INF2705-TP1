@@ -26,6 +26,19 @@ using namespace gl;
 using namespace glm;
 
 
+struct Vertex
+{
+    vec3 position;
+    vec3 color;
+};
+
+
+// Définition des couleurs
+const vec4 red = { 1.f, 0.f, 0.f, 1.0f };
+const vec4 green = { 0.f, 1.f, 0.f, 1.0f };
+const vec4 blue = { 0.f, 0.f, 1.f, 1.0f };
+
+
 struct App : public OpenGLApplication
 {
     App()
@@ -61,12 +74,45 @@ struct App : public OpenGLApplication
 
         loadShaderPrograms();
 
+        
+        loadModels();
+        crystal_.mvpUniformLocation = mvpUniformLocation_;
+        crystal_.colorModUniformLocation = colorModUniformLocation_;
+
 	}
 
+    void checkShaderCompilingError(const char* name, GLuint id)
+    {
+        GLint success;
+        GLchar infoLog[1024];
+
+        glGetShaderiv(id, GL_COMPILE_STATUS, &success);
+        if (!success)
+        {
+            glGetShaderInfoLog(id, 1024, NULL, infoLog);
+            glDeleteShader(id);
+            std::cout << "Shader \"" << name << "\" compile error: " << infoLog << std::endl;
+        }
+    }
+
+
+    void checkProgramLinkingError(const char* name, GLuint id)
+    {
+        GLint success;
+        GLchar infoLog[1024];
+
+        glGetProgramiv(id, GL_LINK_STATUS, &success);
+        if (!success)
+        {
+            glGetProgramInfoLog(id, 1024, NULL, infoLog);
+            glDeleteProgram(id);
+            std::cout << "Program \"" << name << "\" linking error: " << infoLog << std::endl;
+        }
+    }
 	// Appelée à chaque trame. Le buffer swap est fait juste après.
 	void drawFrame() override
 	{
-        
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         ImGui::Begin("Scene Parameters");
         ImGui::End();
         
@@ -125,7 +171,12 @@ struct App : public OpenGLApplication
 	    cameraOrientation_.y -= cameraMouvementY * deltaTime_;
         cameraOrientation_.x -= cameraMouvementX * deltaTime_;
 	}
-	
+
+
+    void loadModels()
+    {
+        crystal_.loadModels();
+    }
 	void updateCameraInput() 
     {
         if (!window_.hasFocus())
@@ -199,69 +250,108 @@ struct App : public OpenGLApplication
         cameraPosition_ += positionOffset * glm::vec3(deltaTime_);
     }
     
-GLuint loadShaderObject(GLenum type, const char* path)
-{
-    std::ifstream file(path);
-    std::stringstream buffer;
-    buffer << file.rdbuf();
-    std::string source = buffer.str();
-    const char* src = source.c_str();
+    GLuint loadShaderObject(GLenum type, const char* path)
+    {
+        std::ifstream file(path);
+        std::stringstream buffer;
+        buffer << file.rdbuf();
+        std::string source = buffer.str();
+        const char* src = source.c_str();
 
-    GLuint shader = glCreateShader(type);
-    glShaderSource(shader, 1, &src, nullptr);
-    glCompileShader(shader);
-    checkShaderCompilingError(path, shader);
-    return shader;
-}
+        GLuint shader = glCreateShader(type);
+        glShaderSource(shader, 1, &src, nullptr);
+        glCompileShader(shader);
+        checkShaderCompilingError(path, shader);
+        return shader;
+    }
+
     void loadShaderPrograms()
-{
-    GLuint vs = loadShaderObject(GL_VERTEX_SHADER, "./shaders/basic.vs.glsl");
-    GLuint fs = loadShaderObject(GL_FRAGMENT_SHADER, "./shaders/basic.fs.glsl");
-    basicSP_ = glCreateProgram();
-    glAttachShader(basicSP_, vs);
-    glAttachShader(basicSP_, fs);
-    glLinkProgram(basicSP_);
-    checkProgramLinkingError("basicSP", basicSP_);
-    glDetachShader(basicSP_, vs);
-    glDetachShader(basicSP_, fs);
-    glDeleteShader(vs);
-    glDeleteShader(fs);
+    {
+        GLuint vs = loadShaderObject(GL_VERTEX_SHADER, "./shaders/basic.vs.glsl");
+        GLuint fs = loadShaderObject(GL_FRAGMENT_SHADER, "./shaders/basic.fs.glsl");
+        basicSP_ = glCreateProgram();
+        glAttachShader(basicSP_, vs);
+        glAttachShader(basicSP_, fs);
+        glLinkProgram(basicSP_);
+        checkProgramLinkingError("basicSP", basicSP_);
+        glDetachShader(basicSP_, vs);
+        glDetachShader(basicSP_, fs);
+        glDeleteShader(vs);
+        glDeleteShader(fs);
 
-    const char* TRANSFORM_VERTEX_SRC_PATH   = "./shaders/transform.vs.glsl";
-    const char* TRANSFORM_FRAGMENT_SRC_PATH = "./shaders/transform.fs.glsl";
+        const char* TRANSFORM_VERTEX_SRC_PATH   = "./shaders/transform.vs.glsl";
+        const char* TRANSFORM_FRAGMENT_SRC_PATH = "./shaders/transform.fs.glsl";
 
-    GLuint vs2 = loadShaderObject(GL_VERTEX_SHADER,   TRANSFORM_VERTEX_SRC_PATH);
-    GLuint fs2 = loadShaderObject(GL_FRAGMENT_SHADER, TRANSFORM_FRAGMENT_SRC_PATH);
-    transformSP_ = glCreateProgram();
-    glAttachShader(transformSP_, vs2);
-    glAttachShader(transformSP_, fs2);
-    glLinkProgram(transformSP_);
-    checkProgramLinkingError("transformSP", transformSP_);
-    glDetachShader(transformSP_, vs2);
-    glDetachShader(transformSP_, fs2);
-    glDeleteShader(vs2);
-    glDeleteShader(fs2);
+        GLuint vs2 = loadShaderObject(GL_VERTEX_SHADER,   TRANSFORM_VERTEX_SRC_PATH);
+        GLuint fs2 = loadShaderObject(GL_FRAGMENT_SHADER, TRANSFORM_FRAGMENT_SRC_PATH);
+        transformSP_ = glCreateProgram();
+        glAttachShader(transformSP_, vs2);
+        glAttachShader(transformSP_, fs2);
+        glLinkProgram(transformSP_);
+        checkProgramLinkingError("transformSP", transformSP_);
+        glDetachShader(transformSP_, vs2);
+        glDetachShader(transformSP_, fs2);
+        glDeleteShader(vs2);
+        glDeleteShader(fs2);
 
-    mvpUniformLocation_      = glGetUniformLocation(transformSP_, "uMVP");
-    colorModUniformLocation_ = glGetUniformLocation(transformSP_, "uColorMod");
+        mvpUniformLocation_      = glGetUniformLocation(transformSP_, "uMVP");
+        colorModUniformLocation_ = glGetUniformLocation(transformSP_, "uColorMod");
 
-    if (mvpUniformLocation_ == -1)
-        std::cerr << "Warning: uMVP not found in transform shader (transformSP_)." << std::endl;
-    if (colorModUniformLocation_ == -1)
-        std::cerr << "Warning: uColorMod not found in transform shader (transformSP_)." << std::endl;
-}
+        if (mvpUniformLocation_ == -1)
+            std::cerr << "Warning: uMVP not found in transform shader (transformSP_)." << std::endl;
+        if (colorModUniformLocation_ == -1)
+            std::cerr << "Warning: uColorMod not found in transform shader (transformSP_)." << std::endl;
+    }
+
+    void drawCrystal(glm::mat4& projView)
+    { 
+        crystal_.update(deltaTime_);
+        crystal_.draw(projView);
+        }
     
+        
     void sceneMain()
     {
         updateCameraInput();
+        
+        glm::mat4 proj = getPerspectiveProjectionMatrix();
+        glm::mat4 view = getViewMatrix();
+        glm::mat4 projView = proj * view;
+
+        drawCrystal(projView);
     }
     
-private:    
+
+    glm::mat4 getViewMatrix()
+    {
+        glm::mat4 view(1.0f);
+
+        view = glm::rotate(view, -cameraOrientation_.x, glm::vec3(1, 0, 0));
+        view = glm::rotate(view, -cameraOrientation_.y, glm::vec3(0, 1, 0));
+        view = glm::translate(view, -cameraPosition_);
+
+        return view;
+    }
+
+
+    glm::mat4 getPerspectiveProjectionMatrix()
+    {
+        float screenRatio = static_cast<float>(window_.getSize().x) / static_cast<float>(window_.getSize().y);
+        return glm::perspective(glm::radians(70.0f), screenRatio, 0.1f, 100.0f);
+    }
+
+private:   
+// Shaders
+    GLuint basicSP_;
+    GLuint transformSP_;
+    GLuint colorModUniformLocation_;
+    GLuint mvpUniformLocation_;
+
+    GLuint vbo_, ebo_, vao_;
     glm::vec3 cameraPosition_;
     glm::vec2 cameraOrientation_;
     
-
-    GLuint vbo_, ebo_, vao_;
+    Crystal crystal_;
 
     // Imgui var
     const char* const SCENE_NAMES[1] = {

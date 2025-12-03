@@ -20,10 +20,6 @@ void Model::load(const char* path)
     std::vector<float> positionY = vertex.getProperty<float>("y");
     std::vector<float> positionZ = vertex.getProperty<float>("z");
 
-    std::vector<unsigned char> colorRed = vertex.getProperty<unsigned char>("red");
-    std::vector<unsigned char> colorGreen = vertex.getProperty<unsigned char>("green");
-    std::vector<unsigned char> colorBlue = vertex.getProperty<unsigned char>("blue");
-
     std::vector<std::vector<unsigned int>> facesIndices = plyIn.getFaceIndices<unsigned int>();
 
     std::vector<PVertex> vtx;
@@ -32,12 +28,9 @@ void Model::load(const char* path)
     {
         PVertex pv;
         pv.pos = glm::vec3(positionX[i], positionY[i], positionZ[i]);
-        if (i < colorRed.size() && i < colorGreen.size() && i < colorBlue.size()) {
-            pv.col = glm::vec3(colorRed[i] / 255.0f, colorGreen[i] / 255.0f, colorBlue[i] / 255.0f);
-        }
-        else {
-            pv.col = glm::vec3(0.8f, 0.8f, 0.8f);
-        }
+        
+        pv.col = glm::vec3(0.8f, 0.8f, 0.8f);
+        
         vtx.push_back(pv);
     }
 
