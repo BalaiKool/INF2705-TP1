@@ -28,29 +28,30 @@ struct App : public OpenGLApplication
     App()
     : cameraPosition_(0.f, 0.f, 0.f)
     , cameraOrientation_(0.f, 0.f)
-    , currentScene_(0)
     , isMouseMotionEnabled_(false)
+    , isQWERTY_(true)
     {
     }
 	
 	void init() override
 	{
 		// Le message expliquant les touches de clavier.
-		setKeybindMessage(
-			"ESC : quitter l'application." "\n"
-			"T : changer de scène." "\n"
-			"W : déplacer la caméra vers l'avant." "\n"
-			"S : déplacer la caméra vers l'arrière." "\n"
-			"A : déplacer la caméra vers la gauche." "\n"
-			"D : déplacer la caméra vers la droite." "\n"
-			"Q : déplacer la caméra vers le bas." "\n"
-			"E : déplacer la caméra vers le haut." "\n"
-			"Flèches : tourner la caméra." "\n"
-			"Souris : tourner la caméra" "\n"
-			"Espace : activer/désactiver la souris." "\n"
-		);
+        setKeybindMessage(
+            "ESC : quitter l'application." "\n"
+            "T : changer de clavier (QWERTY | AZERTY )" "\n"
+            "W | Z: déplacer la caméra vers l'avant." "\n"
+            "S | S: déplacer la caméra vers l'arrière." "\n"
+            "A | Q: déplacer la caméra vers la gauche." "\n"
+            "D | D: déplacer la caméra vers la droite." "\n"
+            "Q | A: déplacer la caméra vers le bas." "\n"
+            "E : déplacer la caméra vers le haut." "\n"
+            "Flèches : tourner la caméra." "\n"
+            "Souris : tourner la caméra" "\n"
+            "Espace : activer/désactiver la souris." "\n"
+        );
 
 		// Config de base.
+        glClearColor(0.8f, 0.8f, 0.8f, 1.0f);
 	}
 
 	// Appelée à chaque trame. Le buffer swap est fait juste après.
@@ -58,19 +59,17 @@ struct App : public OpenGLApplication
 	{
         
         ImGui::Begin("Scene Parameters");
-        ImGui::Combo("Scene", &currentScene_, SCENE_NAMES, N_SCENE_NAMES);
         ImGui::End();
         
-        switch (currentScene_)
-        {
-            case 0: sceneMain();  break;
-        }
+        sceneMain();
 	}
 
 	// Appelée lorsque la fenêtre se ferme.
 	void onClose() override
 	{
-
+        glDeleteBuffers(1, &vbo_);
+        glDeleteBuffers(1, &ebo_);
+        glDeleteVertexArrays(1, &vao_);
 	}
 
 	// Appelée lors d'une touche de clavier.
@@ -96,7 +95,7 @@ struct App : public OpenGLApplication
                 }
 	        break;
 	        case T:
-                currentScene_ = ++currentScene_ < N_SCENE_NAMES ? currentScene_ : 0;
+                isQWERTY_ = !isQWERTY_; break;
             break;
 		    default: break;
 		}
@@ -150,19 +149,42 @@ struct App : public OpenGLApplication
         // Keyboard input
         glm::vec3 positionOffset = glm::vec3(0.0);
         const float SPEED = 10.f;
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::W))
-            positionOffset.z -= SPEED;
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::S))
-            positionOffset.z += SPEED;
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::A))
-            positionOffset.x -= SPEED;
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::D))
-            positionOffset.x += SPEED;
-            
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Q))
-            positionOffset.y -= SPEED;
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::E))
-            positionOffset.y += SPEED;
+        if (isQWERTY_)
+        {
+            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::W))
+                positionOffset.z -= SPEED;
+            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::S))
+                positionOffset.z += SPEED;
+            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::A))
+                positionOffset.x -= SPEED;
+            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::D))
+                positionOffset.x += SPEED;
+
+            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Q))
+                positionOffset.y -= SPEED;
+            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::E))
+                positionOffset.y += SPEED;
+        }
+        else {
+
+            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Z))
+                positionOffset.z -= SPEED;
+            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::S))
+                positionOffset.z += SPEED;
+            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Q))
+                positionOffset.x -= SPEED;
+            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::D))
+                positionOffset.x += SPEED;
+
+            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::A))
+                positionOffset.y -= SPEED;
+            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::LControl))
+                positionOffset.y -= SPEED;
+            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::E))
+                positionOffset.y += SPEED;
+            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::LShift))
+                positionOffset.y += SPEED;
+        }
 
         positionOffset = glm::rotate(glm::mat4(1.0f), cameraOrientation_.y, glm::vec3(0.0, 1.0, 0.0)) * glm::vec4(positionOffset, 1);
         cameraPosition_ += positionOffset * glm::vec3(deltaTime_);
@@ -178,14 +200,17 @@ private:
     glm::vec3 cameraPosition_;
     glm::vec2 cameraOrientation_;
     
+
+    GLuint vbo_, ebo_, vao_;
+
     // Imgui var
     const char* const SCENE_NAMES[1] = {
         "Main Scene"
     };
     const int N_SCENE_NAMES = sizeof(SCENE_NAMES) / sizeof(SCENE_NAMES[0]);
-    int currentScene_;
     
     bool isMouseMotionEnabled_;
+    bool isQWERTY_;
 };
 
 
