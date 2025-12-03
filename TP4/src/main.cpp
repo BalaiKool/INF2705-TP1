@@ -13,6 +13,9 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+// ajoutés:
+#include <SFML/Graphics/Image.hpp>
+
 #include <imgui/imgui.h>
 
 #include <inf2705/OpenGLApplication.hpp>
@@ -30,6 +33,7 @@ struct Vertex
 {
     vec3 position;
     vec3 color;
+    vec2 uv;
 };
 
 
@@ -42,7 +46,7 @@ const vec4 blue = { 0.f, 0.f, 1.f, 1.0f };
 struct App : public OpenGLApplication
 {
     App()
-    : cameraPosition_(0.f, 0.f, 0.f)
+    : cameraPosition_(0.f, 0.f, 5.f)
     , cameraOrientation_(0.f, 0.f)
     , isMouseMotionEnabled_(false)
     , isQWERTY_(true)
@@ -74,8 +78,8 @@ struct App : public OpenGLApplication
 
         loadShaderPrograms();
 
-        
         loadModels();
+        loadTextures();
         crystal_.mvpUniformLocation = mvpUniformLocation_;
         crystal_.colorModUniformLocation = colorModUniformLocation_;
 
@@ -177,6 +181,32 @@ struct App : public OpenGLApplication
     {
         crystal_.loadModels();
     }
+
+    void loadTextures()
+    {
+        sf::Image img;
+        if (!img.loadFromFile("../textures/crystal-uv-unwrap.png"))
+        {
+            std::cerr << "Failed to load texture image!" << std::endl;
+            return;
+        }
+
+        img.flipVertically();
+
+        glGenTextures(1, &crystalTexture_);
+        glBindTexture(GL_TEXTURE_2D, crystalTexture_);
+
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, img.getSize().x, img.getSize().y, 0, GL_RGBA, GL_UNSIGNED_BYTE, img.getPixelsPtr());
+        glGenerateMipmap(GL_TEXTURE_2D);
+
+        glBindTexture(GL_TEXTURE_2D, 0);
+    }
+
 	void updateCameraInput() 
     {
         if (!window_.hasFocus())
@@ -295,19 +325,27 @@ struct App : public OpenGLApplication
         glDeleteShader(fs2);
 
         mvpUniformLocation_      = glGetUniformLocation(transformSP_, "uMVP");
-        colorModUniformLocation_ = glGetUniformLocation(transformSP_, "uColorMod");
 
         if (mvpUniformLocation_ == -1)
             std::cerr << "Warning: uMVP not found in transform shader (transformSP_)." << std::endl;
-        if (colorModUniformLocation_ == -1)
-            std::cerr << "Warning: uColorMod not found in transform shader (transformSP_)." << std::endl;
     }
 
     void drawCrystal(glm::mat4& projView)
-    { 
+    {
+        glUseProgram(transformSP_);
+
+        glUniformMatrix4fv(mvpUniformLocation_, 1, GL_FALSE, glm::value_ptr(projView));
+
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, crystalTexture_);
+        glUniform1i(glGetUniformLocation(transformSP_, "uTexture"), 0);
+
         crystal_.update(deltaTime_);
         crystal_.draw(projView);
-        }
+
+        glBindTexture(GL_TEXTURE_2D, 0);
+    }
+
     
         
     void sceneMain()
@@ -352,6 +390,8 @@ private:
     glm::vec2 cameraOrientation_;
     
     Crystal crystal_;
+
+    GLuint crystalTexture_;
 
     // Imgui var
     const char* const SCENE_NAMES[1] = {

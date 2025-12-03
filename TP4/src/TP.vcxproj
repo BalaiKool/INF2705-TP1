@@ -161,6 +161,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\TP1-3\src\shader_program.cpp" />
     <ClCompile Include="..\imgui\imgui.cpp" />
     <ClCompile Include="..\imgui\imgui_demo.cpp" />
     <ClCompile Include="..\imgui\imgui_draw.cpp" />
@@ -175,13 +176,21 @@
     <None Include="CMakeLists.txt" />
     <None Include=".vscode\settings.json" />
     <None Include="README.md" />
+    <None Include="shaders\basic.fs.glsl" />
+    <None Include="shaders\basic.vs.glsl" />
+    <None Include="shaders\transform.fs.glsl" />
+    <None Include="shaders\transform.vs.glsl" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\TP1-3\src\shader_program.hpp" />
     <ClInclude Include="..\inf2705\OpenGLApplication.hpp" />
     <ClInclude Include="..\inf2705\sfml_utils.hpp" />
     <ClInclude Include="..\inf2705\utils.hpp" />
     <ClInclude Include="crystal.hpp" />
     <ClInclude Include="model.hpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="..\textures\crystal-uv-unwrap.png" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
