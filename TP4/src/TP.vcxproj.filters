@@ -50,6 +50,12 @@
     <ClCompile Include="model.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\TP1-3\src\shader_program.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="cloud.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="CMakeLists.txt">
@@ -62,6 +68,10 @@
       <Filter>VSCode Files</Filter>
     </None>
     <None Include="README.md" />
+    <None Include="shaders\basic.fs.glsl" />
+    <None Include="shaders\basic.vs.glsl" />
+    <None Include="shaders\transform.fs.glsl" />
+    <None Include="shaders\transform.vs.glsl" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\inf2705\OpenGLApplication.hpp">
@@ -79,5 +89,14 @@
     <ClInclude Include="crystal.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\TP1-3\src\shader_program.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="cloud.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="..\textures\crystal-uv-unwrap.png" />
   </ItemGroup>
 </Project>
