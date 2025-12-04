@@ -121,7 +121,25 @@ struct App : public OpenGLApplication
         deltaTime_ = (now - lastTime).asSeconds();
         lastTime = now;
 
+        static float stormTimer = 0.0f;
+        stormTimer += deltaTime_;
+
+        float baseDark = 0.1f;
+        float r = baseDark, g = baseDark, b = baseDark;
+
+        if (rand() % 500 < 2) {
+            float flash = 0.8f + (rand() % 20) * 0.01f;
+            r = g = b = flash;
+        }
+        else if (stormTimer > 10.0f) {
+            float strike = 1.0f;
+            r = g = b = strike;
+            stormTimer = 0.0f;
+        }
+
+        glClearColor(r, g, b, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
         ImGui::Begin("Scene Parameters");
 
         ImGui::Text("Vitesse Rotation");
