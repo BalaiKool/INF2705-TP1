@@ -8,7 +8,7 @@
 
 using namespace gl;
 
-RockyFloor::RockyFloor() {
+RockyFloor::RockyFloor() : time_(0.0f) {
 }
 
 RockyFloor::~RockyFloor() {
@@ -210,31 +210,81 @@ void main() {
 #version 410 core
 in vec3 tePosition;
 in vec3 teNormal;
+
 out vec4 FragColor;
+
 uniform vec3 uCameraPos;
 uniform float uTime;
+uniform vec3 uLightPos;
+uniform vec3 uLightColor;
+uniform float uLightIntensity;
+uniform bool uLightingEnabled;
+uniform bool uShadowsEnabled;
+
+uniform vec3 uCrystalPos;
+uniform float uCrystalHeight;
+uniform vec3 uCloudPositions[20];
+uniform float uCloudSizes[20];
+uniform float uCloudAlphas[20];
+uniform int uCloudCount;
+
+float calculateSimpleShadows(vec3 groundPos) {
+    if (!uShadowsEnabled) {
+        return 0.0;
+    }
+    float totalShadow = 0.0;
+    
+    vec2 crystalGroundPos = uCrystalPos.xz;
+    float crystalDist = distance(groundPos.xz, crystalGroundPos);
+    
+    float crystalShadowRadius = 2.5 + uCrystalHeight * 0.3;
+    
+    float crystalShadow = 1.0 - smoothstep(0.0, crystalShadowRadius, crystalDist);
+    
+    crystalShadow = pow(crystalShadow, 1.3) * 0.7;
+    
+    totalShadow = max(totalShadow, crystalShadow);
+    
+    for(int i = 0; i < min(uCloudCount, 20); i++) {
+        if (uCloudAlphas[i] < 0.01) continue;
+        
+        vec2 cloudGroundPos = uCloudPositions[i].xz;
+        float cloudDist = distance(groundPos.xz, cloudGroundPos);
+        
+        float cloudShadowRadius = uCloudSizes[i] * 1.5;
+        float cloudShadowStrength = uCloudAlphas[i] * 0.6;
+        
+        float cloudShadow = 1.0 - smoothstep(0.0, cloudShadowRadius, cloudDist);
+        cloudShadow = pow(cloudShadow, 1.1) * cloudShadowStrength;
+        
+        totalShadow = max(totalShadow, cloudShadow);
+    }
+    
+    return min(totalShadow, 0.85);
+}
 
 void main() {
     float dist = distance(tePosition, uCameraPos);
     
     vec3 rockDark = vec3(0.35, 0.28, 0.22);
-    vec3 rockMid = vec3(0.45, 0.38, 0.32);
-    vec3 rockLight = vec3(0.55, 0.48, 0.42);
+    vec3 rockMid = vec3(0.55, 0.48, 0.42);
+    vec3 rockLight = vec3(0.65, 0.58, 0.52);
     
     vec3 baseColor = rockMid;
     
     float texVar = sin(tePosition.x * 2.5) * cos(tePosition.z * 3.5) * 0.05;
     baseColor += texVar;
     
-    vec3 sunDir = normalize(vec3(0.8, 1.0, 0.3));
+    vec3 lightDir = normalize(-uLightPos);
     
     vec3 normal = normalize(teNormal);
     
-    float NdotL = max(dot(normal, sunDir), 0.0);
+    float NdotL = max(dot(normal, lightDir), 0.0);
+    float ambient = 0.3;
     
-    float ambient = 0.25;
+    float objectShadow = calculateSimpleShadows(tePosition);
     
-    float shadowTerm = NdotL;
+    float shadowMultiplier = 1.0 - objectShadow * 0.8;
     
     float slopeAO = 1.0 - (1.0 - normal.y) * 0.3;
     
@@ -243,28 +293,29 @@ void main() {
         selfShadow = 0.7 + normal.y * 1.0;
     }
     
-    float finalLight = ambient + (shadowTerm * selfShadow * slopeAO);
+    float diffuse = NdotL * selfShadow * slopeAO * uLightIntensity;
+    float finalLight = ambient * shadowMultiplier + diffuse * shadowMultiplier;
     
-    vec3 litColor = baseColor * finalLight;
+    vec3 litColor = baseColor * finalLight * uLightColor;
     
-    if (NdotL > 0.0) {
+    if (NdotL > 0.0 && objectShadow < 0.3) {
         vec3 viewDir = normalize(uCameraPos - tePosition);
-        vec3 halfDir = normalize(sunDir + viewDir);
+        vec3 halfDir = normalize(lightDir + viewDir);
         float spec = pow(max(dot(normal, halfDir), 0.0), 32.0);
-        litColor += vec3(0.1, 0.1, 0.15) * spec * 0.3;
+        litColor += vec3(0.1, 0.1, 0.15) * spec * 0.3 * (1.0 - objectShadow);
     }
     
     float fog = smoothstep(40.0, 80.0, dist);
-    vec3 fogColor = vec3(0.5, 0.5, 0.55);
+    vec3 fogColor = vec3(0.5, 0.5, 0.55) * uLightColor * 0.5;
     vec3 color = mix(litColor, fogColor, fog);
     
     float craterDist = length(tePosition.xz);
     if (craterDist < 12.0) {
         float craterFactor = 1.0 - smoothstep(8.0, 12.0, craterDist);
-        color = mix(color, color * 1.15, craterFactor);
+        color = mix(color, color * 0.85, craterFactor);
     }
     
-    color = pow(color, vec3(1.0/1.2));
+    color = pow(color, vec3(1.0/1.1));
     
     FragColor = vec4(color, 1.0);
 }
@@ -312,12 +363,31 @@ void main() {
     uCameraPosLoc_ = glGetUniformLocation(shaderProgram_, "uCameraPos");
     uTimeLoc_ = glGetUniformLocation(shaderProgram_, "uTime");
 
+    uLightPosLoc_ = glGetUniformLocation(shaderProgram_, "uLightPos");
+    uLightColorLoc_ = glGetUniformLocation(shaderProgram_, "uLightColor");
+    uLightIntensityLoc_ = glGetUniformLocation(shaderProgram_, "uLightIntensity");
+
+    uCrystalPosLoc_ = glGetUniformLocation(shaderProgram_, "uCrystalPos");
+    uCrystalHeightLoc_ = glGetUniformLocation(shaderProgram_, "uCrystalHeight");
+    uCloudPositionsLoc_ = glGetUniformLocation(shaderProgram_, "uCloudPositions");
+    uCloudSizesLoc_ = glGetUniformLocation(shaderProgram_, "uCloudSizes");
+    uCloudAlphasLoc_ = glGetUniformLocation(shaderProgram_, "uCloudAlphas");
+    uCloudCountLoc_ = glGetUniformLocation(shaderProgram_, "uCloudCount");
+
     if (uCameraPosLoc_ == -1) {
         std::cerr << "ERROR: uCameraPos uniform not found!" << std::endl;
     }
 }
 
-void RockyFloor::draw(const glm::mat4& proj, const glm::mat4& view, const glm::vec3& cameraPos) {
+void RockyFloor::draw(const glm::mat4& proj, const glm::mat4& view,
+    const glm::vec3& cameraPos,
+    const Light::LightSource& light,
+    const glm::vec3& crystalPos,
+    float crystalHeight,
+    const std::vector<glm::vec3>& cloudPositions,
+    const std::vector<float>& cloudSizes,
+    const std::vector<float>& cloudAlphas) {
+
     if (!shaderProgram_ || !vao_) return;
 
     time_ += 0.01f;
@@ -334,11 +404,55 @@ void RockyFloor::draw(const glm::mat4& proj, const glm::mat4& view, const glm::v
     glUniformMatrix4fv(uProjLoc_, 1, GL_FALSE, glm::value_ptr(proj));
     glUniformMatrix4fv(uViewLoc_, 1, GL_FALSE, glm::value_ptr(view));
     glUniformMatrix4fv(uModelLoc_, 1, GL_FALSE, glm::value_ptr(model));
+
     glUniform3f(uCameraPosLoc_, cameraPos.x, cameraPos.y, cameraPos.z);
     glUniform1f(uTimeLoc_, time_);
 
-    glPatchParameteri(GL_PATCH_VERTICES, 4);
+    glUniform3f(uLightPosLoc_, light.direction.x, light.direction.y, light.direction.z);
+    glUniform3f(uLightColorLoc_, light.color.x, light.color.y, light.color.z);
+    glUniform1f(uLightIntensityLoc_, light.intensity);
 
+    glUniform3f(uCrystalPosLoc_, crystalPos.x, crystalPos.y, crystalPos.z);
+    glUniform1f(uCrystalHeightLoc_, crystalHeight);
+
+    int cloudCount = std::min(static_cast<int>(cloudPositions.size()), 20);
+    glUniform1i(uCloudCountLoc_, cloudCount);
+
+    GLint lightingEnabledLoc = glGetUniformLocation(shaderProgram_, "uLightingEnabled");
+    GLint shadowsEnabledLoc = glGetUniformLocation(shaderProgram_, "uShadowsEnabled");
+
+    if (lightingEnabledLoc != -1) {
+        glUniform1i(lightingEnabledLoc, light.enabled ? 1 : 0);
+    }
+    if (shadowsEnabledLoc != -1) {
+        glUniform1i(shadowsEnabledLoc, (light.enabled && light.castShadows) ? 1 : 0);
+    }
+
+    for (int i = 0; i < cloudCount; i++) {
+        std::string posName = "uCloudPositions[" + std::to_string(i) + "]";
+        GLint loc = glGetUniformLocation(shaderProgram_, posName.c_str());
+        if (loc != -1) {
+            glUniform3f(loc, cloudPositions[i].x, cloudPositions[i].y, cloudPositions[i].z);
+        }
+    }
+
+    for (int i = 0; i < cloudCount; i++) {
+        std::string sizeName = "uCloudSizes[" + std::to_string(i) + "]";
+        GLint loc = glGetUniformLocation(shaderProgram_, sizeName.c_str());
+        if (loc != -1 && i < cloudSizes.size()) {
+            glUniform1f(loc, cloudSizes[i]);
+        }
+    }
+
+    for (int i = 0; i < cloudCount; i++) {
+        std::string alphaName = "uCloudAlphas[" + std::to_string(i) + "]";
+        GLint loc = glGetUniformLocation(shaderProgram_, alphaName.c_str());
+        if (loc != -1 && i < cloudAlphas.size()) {
+            glUniform1f(loc, cloudAlphas[i]);
+        }
+    }
+
+    glPatchParameteri(GL_PATCH_VERTICES, 4);
     glDrawElements(GL_PATCHES, (GLsizei)(patchCount_ * 4), GL_UNSIGNED_INT, 0);
 
     glBindVertexArray(0);

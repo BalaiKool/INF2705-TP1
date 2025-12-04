@@ -4,6 +4,7 @@
 #include <vector>
 #include <glm/glm.hpp>
 #include <inf2705/OpenGLApplication.hpp>
+#include <light.hpp>
 
 class RockyFloor {
 public:
@@ -11,26 +12,44 @@ public:
     ~RockyFloor();
 
     void initialize();
-    void draw(const glm::mat4& proj, const glm::mat4& view, const glm::vec3& cameraPos);
+    void draw(const glm::mat4& proj, const glm::mat4& view,
+        const glm::vec3& cameraPos,
+        const Light::LightSource& light,
+        const glm::vec3& crystalPos,
+        float crystalHeight,
+        const std::vector<glm::vec3>& cloudPositions,
+        const std::vector<float>& cloudSizes,
+        const std::vector<float>& cloudAlphas);
 
 private:
     void createGeometry();
     void loadShaders();
 
-    unsigned int vao_ = 0;
-    unsigned int vbo_ = 0;
-    unsigned int ebo_ = 0;
-    unsigned int shaderProgram_ = 0;
+    GLuint vao_ = 0;
+    GLuint vbo_ = 0;
+    GLuint ebo_ = 0;
+    GLuint shaderProgram_ = 0;
 
-    int uProjLoc_ = -1;
-    int uViewLoc_ = -1;
-    int uModelLoc_ = -1;
-    int uCameraPosLoc_ = -1;
-    int uTimeLoc_ = -1;
-
-    size_t vertexCount_ = 0;
+    int vertexCount_ = 0;
+    int patchCount_ = 0;
     float time_ = 0.0f;
-    size_t patchCount_ = 0;
+
+    GLint uProjLoc_;
+    GLint uViewLoc_;
+    GLint uModelLoc_;
+    GLint uCameraPosLoc_;
+    GLint uTimeLoc_;
+
+    GLint uLightPosLoc_;
+    GLint uLightColorLoc_;
+    GLint uLightIntensityLoc_;
+
+    GLint uCrystalPosLoc_;
+    GLint uCrystalHeightLoc_;
+    GLint uCloudPositionsLoc_;
+    GLint uCloudSizesLoc_;
+    GLint uCloudAlphasLoc_;
+    GLint uCloudCountLoc_;
 };
 
 #endif

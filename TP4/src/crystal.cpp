@@ -12,7 +12,6 @@ Crystal::Crystal()
 
 void Crystal::loadModels()
 {
-    // Load PLY and compute UVs directly in Model
     crystal_.load("../models/crystal.ply");
 }
 
@@ -24,8 +23,17 @@ void Crystal::update(float deltaTime)
     position.y = sin(floatPhase) * floatAmplitude;
 }
 
-void Crystal::draw(glm::mat4& projView)
+void Crystal::draw()
 {
     crystal_.draw();
+}
+
+void Crystal::drawShadow() {
+    if (vao == 0) return;
+
+    glBindVertexArray(vao);
+    glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(indices.size()),
+        GL_UNSIGNED_INT, nullptr);
+    glBindVertexArray(0);
 }
 

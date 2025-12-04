@@ -158,35 +158,100 @@ layout(location = 0) in vec3 aPos;
 uniform mat4 uProj;
 uniform mat4 uView;
 uniform mat4 uModel;
+
+out vec3 vWorldPos;
+
 void main() {
-    gl_Position = uProj * uView * uModel * vec4(aPos, 1.0);
+    vec4 worldPos = uModel * vec4(aPos, 1.0);
+    vWorldPos = worldPos.xyz;
+    gl_Position = uProj * uView * worldPos;
 }
 )GLSL";
+
     const char* fsSource = R"GLSL(
 #version 330 core
+in vec3 vWorldPos;
 out vec4 FragColor;
+
 uniform float uAlpha;
+uniform vec3 uLightPos;
+uniform vec3 uLightColor;
+uniform float uLightIntensity;
+uniform vec3 uCameraPos;
+
 void main() {
-    vec3 cloudColor = vec3(0.65, 0.65, 0.65);
-    FragColor = vec4(cloudColor, uAlpha);
+    vec3 cloudColor = vec3(0.85, 0.87, 0.92); // Lighter, whiter clouds
+    
+    vec3 normal = normalize(vWorldPos);
+    vec3 lightDir = normalize(-uLightPos);
+    
+    float diff = max(dot(normal, lightDir), 0.0);
+    vec3 diffuse = diff * uLightColor * uLightIntensity;
+    vec3 ambient = vec3(0.3, 0.35, 0.4);
+    
+    vec3 viewDir = normalize(uCameraPos - vWorldPos);
+    float rim = 1.0 - max(dot(normal, viewDir), 0.0);
+    rim = smoothstep(0.5, 1.0, rim);
+    vec3 rimLight = rim * vec3(0.95, 0.95, 1.0) * 0.3;
+    
+    vec3 litColor = cloudColor * (ambient + diffuse) + rimLight;
+    float colorVar = sin(vWorldPos.x * 0.5 + vWorldPos.z * 0.3) * 0.05;
+    litColor += vec3(colorVar, colorVar * 0.5, 0.0);
+    
+    float depth = distance(vWorldPos, uCameraPos);
+    float depthFade = smoothstep(40.0, 60.0, depth);
+    float finalAlpha = uAlpha * 0.85 * (1.0 - depthFade * 0.5);
+    
+    FragColor = vec4(litColor, finalAlpha);
 }
 )GLSL";
+
     GLuint vs = glCreateShader(GL_VERTEX_SHADER);
     glShaderSource(vs, 1, &vsSource, nullptr);
     glCompileShader(vs);
+
+    // Check compilation
+    GLint success;
+    char infoLog[512];
+    glGetShaderiv(vs, GL_COMPILE_STATUS, &success);
+    if (!success) {
+        glGetShaderInfoLog(vs, 512, nullptr, infoLog);
+        std::cerr << "Cloud vertex shader compilation failed: " << infoLog << std::endl;
+    }
+
     GLuint fs = glCreateShader(GL_FRAGMENT_SHADER);
     glShaderSource(fs, 1, &fsSource, nullptr);
     glCompileShader(fs);
+
+    glGetShaderiv(fs, GL_COMPILE_STATUS, &success);
+    if (!success) {
+        glGetShaderInfoLog(fs, 512, nullptr, infoLog);
+        std::cerr << "Cloud fragment shader compilation failed: " << infoLog << std::endl;
+    }
+
     shaderProgram_ = glCreateProgram();
     glAttachShader(shaderProgram_, vs);
     glAttachShader(shaderProgram_, fs);
     glLinkProgram(shaderProgram_);
+
+    glGetProgramiv(shaderProgram_, GL_LINK_STATUS, &success);
+    if (!success) {
+        glGetProgramInfoLog(shaderProgram_, 512, nullptr, infoLog);
+        std::cerr << "Cloud shader program linking failed: " << infoLog << std::endl;
+    }
+
     glDeleteShader(vs);
     glDeleteShader(fs);
+
     uProjLoc_ = glGetUniformLocation(shaderProgram_, "uProj");
     uViewLoc_ = glGetUniformLocation(shaderProgram_, "uView");
     uModelLoc_ = glGetUniformLocation(shaderProgram_, "uModel");
     uAlphaLoc_ = glGetUniformLocation(shaderProgram_, "uAlpha");
+
+    uLightPosLoc_ = glGetUniformLocation(shaderProgram_, "uLightPos");
+    uLightColorLoc_ = glGetUniformLocation(shaderProgram_, "uLightColor");
+    uLightIntensityLoc_ = glGetUniformLocation(shaderProgram_, "uLightIntensity");
+    uCameraPosLoc_ = glGetUniformLocation(shaderProgram_, "uCameraPos");
 }
 
 void Clouds::update(float deltaTime) {
@@ -219,8 +284,10 @@ void Clouds::update(float deltaTime) {
     }
 }
 
-void Clouds::draw(const glm::mat4& proj, const glm::mat4& view) {
+void Clouds::draw(const glm::mat4& proj, const glm::mat4& view,
+    const Light::LightSource& light, const glm::vec3& cameraPos) {
     if (!shaderProgram_ || !vao_ || clouds_.empty()) return;
+
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glEnable(GL_DEPTH_TEST);
@@ -228,19 +295,52 @@ void Clouds::draw(const glm::mat4& proj, const glm::mat4& view) {
     glEnable(GL_CULL_FACE);
     glCullFace(GL_BACK);
     glFrontFace(GL_CCW);
+
     glUseProgram(shaderProgram_);
-    glBindVertexArray(vao_);
+
     glUniformMatrix4fv(uProjLoc_, 1, GL_FALSE, glm::value_ptr(proj));
     glUniformMatrix4fv(uViewLoc_, 1, GL_FALSE, glm::value_ptr(view));
+
+    if (uCameraPosLoc_ != -1) {
+        glUniform3f(uCameraPosLoc_, cameraPos.x, cameraPos.y, cameraPos.z);
+    }
+    updateLightingUniforms(light);
+
+    glBindVertexArray(vao_);
+
     for (auto& cloud : clouds_) {
         if (cloud.alpha <= 0.01f) continue;
+
         glUniform1f(uAlphaLoc_, cloud.alpha * 0.85f);
+
         glm::mat4 model = glm::translate(glm::mat4(1.0f), cloud.position);
         model = glm::rotate(model, cloud.rotationY, glm::vec3(0.0f, 1.0f, 0.0f));
         model = glm::scale(model, cloud.scale);
         glUniformMatrix4fv(uModelLoc_, 1, GL_FALSE, glm::value_ptr(model));
+
         glDrawElements(GL_TRIANGLES, (GLsizei)indexCount_, GL_UNSIGNED_INT, 0);
     }
+
     glBindVertexArray(0);
     glDisable(GL_BLEND);
+}
+
+void Clouds::updateLightingUniforms(const Light::LightSource& light) {
+    if (uLightPosLoc_ != -1) {
+        glUniform3f(uLightPosLoc_, light.direction.x, light.direction.y, light.direction.z);
+    }
+    if (uLightColorLoc_ != -1) {
+        glUniform3f(uLightColorLoc_, light.color.x, light.color.y, light.color.z);
+    }
+    if (uLightIntensityLoc_ != -1) {
+        glUniform1f(uLightIntensityLoc_, light.intensity);
+    }
+}
+
+void Clouds::drawShadow() {
+    if (!vao_) return;
+
+    glBindVertexArray(vao_);
+    glDrawElements(GL_TRIANGLES, (GLsizei)indexCount_, GL_UNSIGNED_INT, 0);
+    glBindVertexArray(0);
 }

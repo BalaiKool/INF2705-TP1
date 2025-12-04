@@ -14,13 +14,16 @@ public:
 
     void update(float deltaTime);
 
-    void draw(glm::mat4& projView);
+    void draw();
+    void drawShadow();
 
 private:
     void drawCrystal(const glm::mat4& crystalMVP);
 
 private:
     Model crystal_;
+    unsigned int vao_ = 0;
+    size_t vertexCount_ = 0;
 
 public:
     glm::vec3 position;
@@ -31,6 +34,18 @@ public:
     float floatAmplitude = 0.25f;
     float floatPhase = 0.0f;
 
-    GLuint colorModUniformLocation;
-    GLuint mvpUniformLocation;
+    std::vector<float> vertices;
+    std::vector<unsigned int> indices;
+    GLuint vao = 0;
+    GLuint vbo = 0;
+    GLuint ebo = 0;
+
+    GLint mvpUniformLocation = -1;
+    GLint modelUniformLocation = -1;
+    GLint textureUniformLocation = -1;
+    GLint lightPosUniformLocation = -1;
+    GLint lightColorUniformLocation = -1;
+    GLint lightIntensityUniformLocation = -1;
+    GLint cameraPosUniformLocation = -1;
+    GLint colorModUniformLocation = -1;
 };
