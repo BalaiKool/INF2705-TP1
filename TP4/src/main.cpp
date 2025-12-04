@@ -22,6 +22,7 @@
 
 #include "model.hpp"
 #include "crystal.hpp"
+#include "cloud.hpp"
 
 #define CHECK_GL_ERROR printGLError(__FILE__, __LINE__)
 
@@ -82,6 +83,9 @@ struct App : public OpenGLApplication
         loadTextures();
         crystal_.mvpUniformLocation = mvpUniformLocation_;
         crystal_.colorModUniformLocation = colorModUniformLocation_;
+
+        clouds_ = Clouds(50);
+        clouds_.initialize();
 
 	}
 
@@ -210,7 +214,7 @@ struct App : public OpenGLApplication
 
         img.flipVertically();
 
-        glGenTextures(1, &crystalTexture_);
+        gl::glGenTextures(1, &crystalTexture_);
         glBindTexture(GL_TEXTURE_2D, crystalTexture_);
 
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -381,6 +385,8 @@ struct App : public OpenGLApplication
         glm::mat4 projView = proj * view;
 
         drawCrystal(projView);
+        clouds_.update(deltaTime_);
+        clouds_.draw(proj, view);
     }
     
 
@@ -414,8 +420,11 @@ private:
     glm::vec2 cameraOrientation_;
     
     Crystal crystal_;
-
     GLuint crystalTexture_;
+
+    Clouds clouds_;
+    float cloudSpeed_ = 1.0f;
+    float cloudAlpha_ = 0.6f;
 
     sf::Clock clock;
     float deltaTime_;

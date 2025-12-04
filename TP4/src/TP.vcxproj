@@ -168,11 +168,14 @@
     <ClCompile Include="..\imgui\imgui_impl_opengl3.cpp" />
     <ClCompile Include="..\imgui\imgui_tables.cpp" />
     <ClCompile Include="..\imgui\imgui_widgets.cpp" />
+    <ClCompile Include="cloud.cpp" />
     <ClCompile Include="crystal.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="model.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="cloud.fs.glsl" />
+    <None Include="cloud.vs.glsl" />
     <None Include="CMakeLists.txt" />
     <None Include=".vscode\settings.json" />
     <None Include="README.md" />
@@ -186,6 +189,7 @@
     <ClInclude Include="..\inf2705\OpenGLApplication.hpp" />
     <ClInclude Include="..\inf2705\sfml_utils.hpp" />
     <ClInclude Include="..\inf2705\utils.hpp" />
+    <ClInclude Include="cloud.hpp" />
     <ClInclude Include="crystal.hpp" />
     <ClInclude Include="model.hpp" />
   </ItemGroup>
