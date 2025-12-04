@@ -13,8 +13,6 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#include <SFML/Graphics/Image.hpp>
-
 #include <imgui/imgui.h>
 
 #include <inf2705/OpenGLApplication.hpp>
@@ -24,6 +22,7 @@
 #include "rocky_floor.hpp"
 #include "cloud.hpp"
 #include "light.hpp"
+#include "audiovisualizer.hpp"
 
 #define CHECK_GL_ERROR printGLError(__FILE__, __LINE__)
 
@@ -84,6 +83,8 @@ struct App : public OpenGLApplication
         rockyFloor_.initialize();
         clouds_ = Clouds(50);
         clouds_.initialize();
+
+        audioViz_.loadMusic("lofi-lofi-chill-lofi-girl-438671.mp3"); //Royalty-free music de https://pixabay.com/music/search/lofi/
     }
 
     void checkShaderCompilingError(const char* name, GLuint id)
@@ -121,26 +122,36 @@ struct App : public OpenGLApplication
         deltaTime_ = (now - lastTime).asSeconds();
         lastTime = now;
 
-        static float stormTimer = 0.0f;
-        stormTimer += deltaTime_;
+        audioViz_.update(deltaTime_);
+
+        float grayValue = audioViz_.getVolume();
 
         float baseDark = 0.1f;
-        float r = baseDark, g = baseDark, b = baseDark;
+        grayValue = baseDark + grayValue * (1.0f - baseDark);
 
-        if (rand() % 500 < 2) {
-            float flash = 0.8f + (rand() % 20) * 0.01f;
-            r = g = b = flash;
-        }
-        else if (stormTimer > 10.0f) {
-            float strike = 1.0f;
-            r = g = b = strike;
-            stormTimer = 0.0f;
-        }
+        if (grayValue < 0.0f) grayValue = 0.0f;
+        if (grayValue > 1.0f) grayValue = 1.0f;
 
-        glClearColor(r, g, b, 1.0f);
+        glClearColor(grayValue, grayValue, grayValue, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         ImGui::Begin("Scene Parameters");
+
+        if (audioViz_.isMusicLoaded()) {
+            if (ImGui::Button(audioViz_.isMusicPlaying() ? "Pause Music" : "Play Music")) {
+                audioViz_.togglePlayback();
+            }
+
+            ImGui::SameLine();
+            if (ImGui::Button("Stop")) {
+                audioViz_.stopMusic();
+            }
+
+
+        }
+        else {
+            ImGui::Text("No audio file loaded");
+        }
 
         ImGui::Text("Vitesse Rotation");
         float rotationDeg = glm::degrees(crystal_.rotationSpeed);
@@ -534,6 +545,9 @@ private:
     float deltaTime_;
 
     Light light_;
+
+    AudioVisualizer audioViz_;
+    bool audioEnabled_ = false;
 
     const char* const SCENE_NAMES[1] = {
         "Main Scene"
