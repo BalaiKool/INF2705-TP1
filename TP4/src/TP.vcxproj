@@ -171,6 +171,7 @@
     <ClCompile Include="crystal.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="model.cpp" />
+    <ClCompile Include="rocky_floor.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="CMakeLists.txt" />
@@ -188,6 +189,7 @@
     <ClInclude Include="..\inf2705\utils.hpp" />
     <ClInclude Include="crystal.hpp" />
     <ClInclude Include="model.hpp" />
+    <ClInclude Include="rocky_floor.hpp" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="..\textures\crystal-uv-unwrap.png" />

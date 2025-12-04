@@ -22,6 +22,7 @@
 
 #include "model.hpp"
 #include "crystal.hpp"
+#include "rocky_floor.hpp"
 
 #define CHECK_GL_ERROR printGLError(__FILE__, __LINE__)
 
@@ -82,6 +83,8 @@ struct App : public OpenGLApplication
         loadTextures();
         crystal_.mvpUniformLocation = mvpUniformLocation_;
         crystal_.colorModUniformLocation = colorModUniformLocation_;
+
+        rockyFloor_.initialize();
 
 	}
 
@@ -378,6 +381,9 @@ struct App : public OpenGLApplication
         
         glm::mat4 proj = getPerspectiveProjectionMatrix();
         glm::mat4 view = getViewMatrix();
+
+        rockyFloor_.draw(proj, view, cameraPosition_);
+
         glm::mat4 projView = proj * view;
 
         drawCrystal(projView);
@@ -417,6 +423,8 @@ private:
 
     GLuint crystalTexture_;
 
+    RockyFloor rockyFloor_;
+
     sf::Clock clock;
     float deltaTime_;
 
@@ -433,15 +441,15 @@ private:
 
 int main(int argc, char* argv[])
 {
-	WindowSettings settings = {};
-	settings.fps = 60;
-	settings.context.depthBits = 24;
-	settings.context.stencilBits = 8;
-	settings.context.antiAliasingLevel = 4;
-	settings.context.majorVersion = 3;
-	settings.context.minorVersion = 3;
-	settings.context.attributeFlags = sf::ContextSettings::Attribute::Core;
+    WindowSettings settings = {};
+    settings.fps = 60;
+    settings.context.depthBits = 24;
+    settings.context.stencilBits = 8;
+    settings.context.antiAliasingLevel = 4;
+    settings.context.majorVersion = 4;
+    settings.context.minorVersion = 1;
+    settings.context.attributeFlags = sf::ContextSettings::Attribute::Core;
 
-	App app;
-	app.run(argc, argv, "Tp4", settings);
+    App app;
+    app.run(argc, argv, "Tp4", settings);
 }
