@@ -174,8 +174,6 @@
     <ClCompile Include="model.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="cloud.fs.glsl" />
-    <None Include="cloud.vs.glsl" />
     <None Include="CMakeLists.txt" />
     <None Include=".vscode\settings.json" />
     <None Include="README.md" />

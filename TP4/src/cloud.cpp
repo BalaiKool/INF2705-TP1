@@ -121,8 +121,8 @@ void Clouds::spawnCloud(unsigned int index) {
     clouds_[index].fadePhase = 0.0f;
     clouds_[index].alpha = 0.0f;
     clouds_[index].scale = glm::vec3(
-        randomFloat(1.5f, 2.5f),
-        randomFloat(0.4f, 0.7f),
+        randomFloat(1.8f, 2.8f),
+        randomFloat(0.7f, 1.1f),
         randomFloat(1.5f, 2.5f)
     );
     clouds_[index].rotationY = randomFloat(0.0f, M_PI * 2.0f);
