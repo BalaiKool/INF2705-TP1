@@ -168,13 +168,19 @@
     <ClCompile Include="..\imgui\imgui_impl_opengl3.cpp" />
     <ClCompile Include="..\imgui\imgui_tables.cpp" />
     <ClCompile Include="..\imgui\imgui_widgets.cpp" />
+    <ClCompile Include="audiovisualizer.cpp" />
+    <ClCompile Include="cloud.cpp" />
     <ClCompile Include="crystal.cpp" />
+    <ClCompile Include="light.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="model.cpp" />
+    <ClCompile Include="rocky_floor.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="CMakeLists.txt" />
     <None Include=".vscode\settings.json" />
+    <None Include="crystal.fs.glsl" />
+    <None Include="crystal.vs.glsl" />
     <None Include="README.md" />
     <None Include="shaders\basic.fs.glsl" />
     <None Include="shaders\basic.vs.glsl" />
@@ -186,12 +192,19 @@
     <ClInclude Include="..\inf2705\OpenGLApplication.hpp" />
     <ClInclude Include="..\inf2705\sfml_utils.hpp" />
     <ClInclude Include="..\inf2705\utils.hpp" />
+    <ClInclude Include="audiovisualizer.hpp" />
+    <ClInclude Include="cloud.hpp" />
     <ClInclude Include="crystal.hpp" />
+    <ClInclude Include="light.hpp" />
     <ClInclude Include="happly.h" />
     <ClInclude Include="model.hpp" />
+    <ClInclude Include="rocky_floor.hpp" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="..\textures\crystal-uv-unwrap.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Media Include="..\..\..\..\..\..\Downloads\lofi-lofi-chill-lofi-girl-438671.mp3" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
