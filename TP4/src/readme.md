@@ -29,7 +29,7 @@ De plus, des éclairs sont simulés dans le fond en faisant varier la couleur du
 
 ## Audio
 
-Nousa vons choisi d'utilsier un fond audio qui affectait la scène en gérant l'apparition des éclairs en fonction du volume de la musique. Ainsi, pricipalement sur les temps forts et les "drops" de la musique, des éclairs apparaissent. Nous avons choisi une musique de [Lofi Girl](https://www.youtube.com/@LofiGirl) car elle était rythmé (facilitant la visibilité de la syncrhonisation des éclairs) sans pour autant s'imposer sur la scène.
+Nous avons choisi d'utiliser un fond audio qui affectait la scène en gérant l'apparition des éclairs en fonction du volume de la musique. Ainsi, pricipalement sur les temps forts et les "drops" de la musique, des éclairs apparaissent. Nous avons choisi une musique de [Lofi Girl](https://www.youtube.com/@LofiGirl) car elle était rythmé (facilitant la visibilité de la syncrhonisation des éclairs) sans pour autant s'imposer sur la scène.
 
 ## Contrôles
 
@@ -53,7 +53,7 @@ La partie suivante est relative à l'utilisaiton de l'interface ImGui. Cette int
 
 ### Contrôle du son
 
-Nous avons choisi d'utiliser une musique de [Lofi Girl](https://www.youtube.com/@LofiGirl) afin d'accompagner notre projet. Nous pouvons démarrer la musique, auquel cas, les éclairs se syncronisent automatiquement à la musique; ou la mettre en pause ou l'arreter complètement. 
+Nous avons choisi d'utiliser une musique libre de droit de [Lofi Girl](https://www.youtube.com/@LofiGirl) afin d'accompagner notre projet. Nous pouvons démarrer la musique, auquel cas, les éclairs se syncronisent automatiquement à la musique; ou la mettre en pause ou l'arreter complètement. 
 
 ### Paramêtres du cristal
 
@@ -64,11 +64,12 @@ Il y a trois facteurs que nous pouvosn crontroler du cristal :
 
 ### Paramètre d'illumination
 
-Un source de lumière immitant el soleil est présente et est paramétrable. Nous pouvons notamment chosisi la couleur de la source d'illumination, donnant plusieurs ambiances à la scène, l'intensité de la source lumineuse, mais aussi la direction qu'elle pointe. 
+Un source de lumière imitant le soleil est présente et est paramétrable. Nous pouvons notamment chosisi la couleur de la source d'illumination, donnant plusieurs ambiances à la scène, l'intensité de la source lumineuse, mais aussi la direction qu'elle pointe. 
 
-On peut choisir de totalement désactiver cette lumière, ainsi que les omrbes projetées sur le sol.
+On peut choisir de totalement désactiver cette lumière, ainsi que les omrbes projetées sur le sol. Cette lumière est codée en tant que direction brute avec une couleur déterminée.
 
 
 ## Imports effectués
 
-- Pour l'audio, nous avons importé SFML/audio.hpp, afin de gérer le traitement du son.
+- Pour l'audio, nous avons importé SFML/audio.hpp, afin de gérer le traitement du son. Cette extension nous permet de contrôler un fichier audio et recueillir les données du buffer audio pour
+les traiter. Nous avons fait en sorte que le volume du buffer affecte le fond d'écran.

@@ -154,8 +154,7 @@ struct App : public OpenGLApplication
         }
 
         ImGui::Text("Vitesse Rotation");
-        float rotationDeg = glm::degrees(crystal_.rotationSpeed);
-        ImGui::SliderFloat("##RotationSpeed", &rotationDeg, 0.0f, 360.0f);
+        ImGui::SliderFloat("##RotationSpeed", &crystal_.rotationSpeed, 0.0f, 5.0f);
 
         ImGui::Text("Vitesse Flottaison");
         ImGui::SliderFloat("##FloatSpeed", &crystal_.floatSpeed, 0.0f, 5.0f);
