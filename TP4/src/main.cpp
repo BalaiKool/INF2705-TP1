@@ -260,7 +260,7 @@ struct App : public OpenGLApplication
     {
         // Load color texture
         sf::Image imgColor;
-        if (!imgColor.loadFromFile("../textures/purple_uv_map_purple_2.png"))
+        if (!imgColor.loadFromFile("../textures/crystal_uv_map_purple_full.png"))
         {
             std::cerr << "Failed to load color texture!" << std::endl;
             return;
@@ -387,13 +387,13 @@ struct App : public OpenGLApplication
 
             if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::A))
                 positionOffset.y -= SPEED;
-            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::LControl))
-                positionOffset.y -= SPEED;
             if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::E))
                 positionOffset.y += SPEED;
-            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::LShift))
-                positionOffset.y += SPEED;
         }
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::LControl))
+            positionOffset.y -= SPEED;
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::LShift))
+            positionOffset.y += SPEED;
 
         positionOffset = glm::rotate(glm::mat4(1.0f), cameraOrientation_.y, glm::vec3(0.0, 1.0, 0.0)) * glm::vec4(positionOffset, 1);
         cameraPosition_ += positionOffset * glm::vec3(deltaTime_);
@@ -655,7 +655,7 @@ int main(int argc, char* argv[])
     settings.context.depthBits = 24;
     settings.context.stencilBits = 8;
     settings.context.antiAliasingLevel = 4;
-    settings.context.majorVersion = 4;
+    settings.context.majorVersion = 5;
     settings.context.minorVersion = 1;
     settings.context.attributeFlags = sf::ContextSettings::Attribute::Core;
 
