@@ -187,6 +187,7 @@
     <ClInclude Include="..\inf2705\sfml_utils.hpp" />
     <ClInclude Include="..\inf2705\utils.hpp" />
     <ClInclude Include="crystal.hpp" />
+    <ClInclude Include="happly.h" />
     <ClInclude Include="model.hpp" />
   </ItemGroup>
   <ItemGroup>

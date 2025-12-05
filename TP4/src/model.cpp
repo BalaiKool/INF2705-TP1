@@ -1,4 +1,4 @@
-#include "model.hpp"
+﻿#include "model.hpp"
 #include "happly.h"
 #include <iostream>
 #include <vector>
@@ -16,82 +16,77 @@ void Model::load(const char* path)
 {
     happly::PLYData plyIn(path);
 
-    happly::Element& vertex = plyIn.getElement("vertex");
-    std::vector<float> positionX = vertex.getProperty<float>("x");
-    std::vector<float> positionY = vertex.getProperty<float>("y");
-    std::vector<float> positionZ = vertex.getProperty<float>("z");
+    // --- Read vertex properties ---
+    auto& vertex = plyIn.getElement("vertex");
+    std::vector<float> px = vertex.getProperty<float>("x");
+    std::vector<float> py = vertex.getProperty<float>("y");
+    std::vector<float> pz = vertex.getProperty<float>("z");
 
-    std::vector<std::vector<unsigned int>> facesIndices = plyIn.getFaceIndices<unsigned int>();
+    // Blender exported UVs as s/t
+    std::vector<float> us = vertex.getProperty<float>("s");
+    std::vector<float> vs = vertex.getProperty<float>("t");
 
+    const size_t vcount = px.size();
+    std::cout << "[Model::load] Blender UVs detected ("
+        << us.size() << " coords)." << std::endl;
+
+    // --- Build vertex array ---
     std::vector<PVertex> vtx;
-    vtx.reserve(positionX.size());
-    for (size_t i = 0; i < positionX.size(); ++i)
+    vtx.resize(vcount);
+
+    for (size_t i = 0; i < vcount; ++i)
     {
-        PVertex pv;
-        pv.pos = glm::vec3(positionX[i], positionY[i], positionZ[i]);
-        pv.col = glm::vec3(0.8f);
-        pv.uv = glm::vec2(0.0f, 0.0f);
-        vtx.push_back(pv);
+        vtx[i].pos = glm::vec3(px[i], py[i], pz[i]);
+        vtx[i].col = glm::vec3(1.0f);
+
+        // IMPORTANT:
+        // Your texture loader flips the PNG vertically (flipVertically()).
+        // So we must flip V as well.
+        vtx[i].uv = glm::vec2(us[i], 1.0f - vs[i]);
     }
 
-    // --- Compute UVs based on your texture layout ---
-    float minY = FLT_MAX, maxY = -FLT_MAX;
-    for (auto& v : vtx) {
-        minY = std::min(minY, v.pos.y);
-        maxY = std::max(maxY, v.pos.y);
-    }
-    float height = maxY - minY;
-
-    for (auto& v : vtx)
-    {
-        float u, vCoord;
-
-        // Top hex (blue) in middle of texture
-        if (v.pos.y > maxY - height * 0.1f)
-        {
-            u = 0.5f + (v.pos.x) * 0.1f;      // adjust to fit top hex width
-            vCoord = 0.75f + (v.pos.z) * 0.1f; // adjust to fit top hex vertical
-        }
-        // Bottom hex (red) underneath
-        else if (v.pos.y < minY + height * 0.15f)
-        {
-            u = 0.5f + (v.pos.x) * 0.08f;
-            vCoord = 0.55f + (v.pos.z) * 0.08f;
-        }
-        // Side trapezoids (green)
-        else
-        {
-            float theta = atan2(v.pos.z, v.pos.x); // -pi..pi
-            u = (theta + glm::pi<float>()) / (2.0f * glm::pi<float>()); // wrap 0..1 horizontally
-            float yNorm = (v.pos.y - minY) / height;
-            vCoord = yNorm * 0.75f; // lower 75% of texture for sides
-        }
-
-        v.uv = glm::vec2(u, vCoord);
-    }
-
+    // --- Read Blender faces and triangulate ---
+    auto faces = plyIn.getFaceIndices<unsigned int>();
 
     std::vector<GLuint> idx;
-    idx.reserve(facesIndices.size() * 3);
-    for (auto& face : facesIndices)
+    idx.reserve(faces.size() * 3);
+
+    for (auto& f : faces)
     {
-        if (face.size() == 3)
+        if (f.size() == 3)
         {
-            idx.push_back(face[0]);
-            idx.push_back(face[1]);
-            idx.push_back(face[2]);
+            idx.push_back(f[0]);
+            idx.push_back(f[1]);
+            idx.push_back(f[2]);
+        }
+        else if (f.size() == 4)
+        {
+            // Blender quads → triangle 1
+            idx.push_back(f[0]);
+            idx.push_back(f[1]);
+            idx.push_back(f[2]);
+
+            // Blender quads → triangle 2
+            idx.push_back(f[0]);
+            idx.push_back(f[2]);
+            idx.push_back(f[3]);
+        }
+        else
+        {
+            // (Blender does not export ngons in PLY; we can ignore)
         }
     }
     count_ = static_cast<GLsizei>(idx.size());
 
+    // --- Compute bounding box center ---
     glm::vec3 minV(FLT_MAX), maxV(-FLT_MAX);
-    for (const auto& v : vtx)
-    {
+    for (auto& v : vtx) {
         minV = glm::min(minV, v.pos);
         maxV = glm::max(maxV, v.pos);
     }
     center_ = 0.5f * (minV + maxV);
 
+    // --- Upload to GPU ---
     glGenVertexArrays(1, &vao_);
     glGenBuffers(1, &vbo_);
     glGenBuffers(1, &ebo_);
@@ -114,8 +109,7 @@ void Model::load(const char* path)
     glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(PVertex), (void*)offsetof(PVertex, uv));
 
     glBindVertexArray(0);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
 }
 
 Model::~Model()

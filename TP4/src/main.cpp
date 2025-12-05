@@ -202,7 +202,7 @@ struct App : public OpenGLApplication
     void loadTextures()
     {
         sf::Image img;
-        if (!img.loadFromFile("../textures/crystal-uv-unwrap.png"))
+        if (!img.loadFromFile("../textures/purple_uv_map_purple_2.png"))
         {
             std::cerr << "Failed to load texture image!" << std::endl;
             return;
