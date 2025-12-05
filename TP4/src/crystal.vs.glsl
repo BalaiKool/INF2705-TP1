@@ -5,21 +5,21 @@ layout(location = 2) in vec2 aUV;
 
 out vec3 vertexColor;
 out vec2 texCoord;
-out vec3 vWorldPos;
-out vec3 vNormal;
+out vec3 fragPos;
+out vec3 fragNormal;
 
 uniform mat4 uMVP;
 uniform mat4 uModel;
+uniform mat3 uNormalMatrix;
 
 void main()
 {
     vertexColor = aColor;
     texCoord = aUV;
     
-    vec4 worldPos = uModel * vec4(aPos, 1.0);
-    vWorldPos = worldPos.xyz;
-    
-    vNormal = normalize(mat3(transpose(inverse(uModel))) * aPos);
+    fragPos = vec3(uModel * vec4(aPos, 1.0));
+
+    fragNormal = uNormalMatrix * normalize(aPos);
     
     gl_Position = uMVP * vec4(aPos, 1.0);
 }

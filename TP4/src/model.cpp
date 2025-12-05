@@ -32,6 +32,7 @@ void Model::load(const char* path)
     for (size_t i = 0; i < vcount; ++i)
     {
         vtx[i].pos = glm::vec3(px[i], py[i], pz[i]);
+        vtx[i].col = glm::vec3(1.0f);
         vtx[i].uv = glm::vec2(us[i], 1.0f - vs[i]);
     }
 
