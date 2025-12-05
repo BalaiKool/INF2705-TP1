@@ -16,36 +16,25 @@ void Model::load(const char* path)
 {
     happly::PLYData plyIn(path);
 
-    // --- Read vertex properties ---
     auto& vertex = plyIn.getElement("vertex");
     std::vector<float> px = vertex.getProperty<float>("x");
     std::vector<float> py = vertex.getProperty<float>("y");
     std::vector<float> pz = vertex.getProperty<float>("z");
 
-    // Blender exported UVs as s/t
     std::vector<float> us = vertex.getProperty<float>("s");
     std::vector<float> vs = vertex.getProperty<float>("t");
 
     const size_t vcount = px.size();
-    std::cout << "[Model::load] Blender UVs detected ("
-        << us.size() << " coords)." << std::endl;
 
-    // --- Build vertex array ---
     std::vector<PVertex> vtx;
     vtx.resize(vcount);
 
     for (size_t i = 0; i < vcount; ++i)
     {
         vtx[i].pos = glm::vec3(px[i], py[i], pz[i]);
-        vtx[i].col = glm::vec3(1.0f);
-
-        // IMPORTANT:
-        // Your texture loader flips the PNG vertically (flipVertically()).
-        // So we must flip V as well.
         vtx[i].uv = glm::vec2(us[i], 1.0f - vs[i]);
     }
 
-    // --- Read Blender faces and triangulate ---
     auto faces = plyIn.getFaceIndices<unsigned int>();
 
     std::vector<GLuint> idx;
@@ -61,24 +50,17 @@ void Model::load(const char* path)
         }
         else if (f.size() == 4)
         {
-            // Blender quads → triangle 1
             idx.push_back(f[0]);
             idx.push_back(f[1]);
             idx.push_back(f[2]);
 
-            // Blender quads → triangle 2
             idx.push_back(f[0]);
             idx.push_back(f[2]);
             idx.push_back(f[3]);
         }
-        else
-        {
-            // (Blender does not export ngons in PLY; we can ignore)
-        }
     }
     count_ = static_cast<GLsizei>(idx.size());
 
-    // --- Compute bounding box center ---
     glm::vec3 minV(FLT_MAX), maxV(-FLT_MAX);
     for (auto& v : vtx) {
         minV = glm::min(minV, v.pos);
@@ -86,7 +68,6 @@ void Model::load(const char* path)
     }
     center_ = 0.5f * (minV + maxV);
 
-    // --- Upload to GPU ---
     glGenVertexArrays(1, &vao_);
     glGenBuffers(1, &vbo_);
     glGenBuffers(1, &ebo_);
@@ -122,7 +103,18 @@ Model::~Model()
 void Model::draw()
 {
     if (vao_ == 0 || count_ == 0) return;
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, texColor_);
+
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, texNormal_);
+
+    glActiveTexture(GL_TEXTURE2);
+    glBindTexture(GL_TEXTURE_2D, texRoughness_);
+
     glBindVertexArray(vao_);
     glDrawElements(GL_TRIANGLES, count_, GL_UNSIGNED_INT, 0);
     glBindVertexArray(0);
 }
+

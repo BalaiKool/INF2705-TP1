@@ -29,3 +29,17 @@ void Crystal::draw(glm::mat4& projView)
     crystal_.draw();
 }
 
+void Crystal::setColorTexture(GLuint tex)
+{ 
+    crystal_.setColorTexture(tex); 
+}
+
+void Crystal::setNormalTexture(GLuint tex)
+{ 
+    crystal_.setNormalTexture(tex);
+}
+
+void Crystal::setRoughnessTexture(GLuint tex)
+{ 
+    crystal_.setRoughnessTexture(tex); 
+}

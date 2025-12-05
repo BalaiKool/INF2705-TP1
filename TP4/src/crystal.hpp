@@ -16,6 +16,10 @@ public:
 
     void draw(glm::mat4& projView);
 
+    void setColorTexture(GLuint tex);
+    void setNormalTexture(GLuint tex);
+    void setRoughnessTexture(GLuint tex);
+
 private:
     void drawCrystal(const glm::mat4& crystalMVP);
 

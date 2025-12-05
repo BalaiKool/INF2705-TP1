@@ -141,12 +141,16 @@ struct App : public OpenGLApplication
     }
 
 	// Appelée lorsque la fenêtre se ferme.
-	void onClose() override
-	{
+    void onClose() override
+    {
         glDeleteBuffers(1, &vbo_);
         glDeleteBuffers(1, &ebo_);
         glDeleteVertexArrays(1, &vao_);
-	}
+
+        if (crystalTexture_) glDeleteTextures(1, &crystalTexture_);
+        if (crystalNormalTexture_) glDeleteTextures(1, &crystalNormalTexture_);
+        if (crystalRoughnessTexture_) glDeleteTextures(1, &crystalRoughnessTexture_);
+    }
 
 	// Appelée lors d'une touche de clavier.
 	void onKeyPress(const sf::Event::KeyPressed& key) override
@@ -201,27 +205,73 @@ struct App : public OpenGLApplication
 
     void loadTextures()
     {
-        sf::Image img;
-        if (!img.loadFromFile("../textures/purple_uv_map_purple_2.png"))
+        // Load color texture
+        sf::Image imgColor;
+        if (!imgColor.loadFromFile("../textures/purple_uv_map_purple_2.png"))
         {
-            std::cerr << "Failed to load texture image!" << std::endl;
+            std::cerr << "Failed to load color texture!" << std::endl;
             return;
         }
-
-        img.flipVertically();
+        imgColor.flipVertically();
 
         glGenTextures(1, &crystalTexture_);
         glBindTexture(GL_TEXTURE_2D, crystalTexture_);
-
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, img.getSize().x, img.getSize().y, 0, GL_RGBA, GL_UNSIGNED_BYTE, img.getPixelsPtr());
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, imgColor.getSize().x, imgColor.getSize().y,
+            0, GL_RGBA, GL_UNSIGNED_BYTE, imgColor.getPixelsPtr());
         glGenerateMipmap(GL_TEXTURE_2D);
 
+        // Load normal map
+        sf::Image imgNormal;
+        if (!imgNormal.loadFromFile("../textures/crystal_normal.png"))
+        {
+            std::cerr << "Failed to load normal texture!" << std::endl;
+            crystalNormalTexture_ = 0; // Mark as invalid
+        }
+        else
+        {
+            imgNormal.flipVertically();
+            glGenTextures(1, &crystalNormalTexture_);
+            glBindTexture(GL_TEXTURE_2D, crystalNormalTexture_);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, imgNormal.getSize().x, imgNormal.getSize().y,
+                0, GL_RGBA, GL_UNSIGNED_BYTE, imgNormal.getPixelsPtr());
+            glGenerateMipmap(GL_TEXTURE_2D);
+        }
+
+        // Load roughness map
+        sf::Image imgRoughness;
+        if (!imgRoughness.loadFromFile("../textures/crystal_roughness.png"))
+        {
+            std::cerr << "Failed to load roughness texture!" << std::endl;
+            crystalRoughnessTexture_ = 0; // Mark as invalid
+        }
+        else
+        {
+            imgRoughness.flipVertically();
+            glGenTextures(1, &crystalRoughnessTexture_);
+            glBindTexture(GL_TEXTURE_2D, crystalRoughnessTexture_);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, imgRoughness.getSize().x, imgRoughness.getSize().y,
+                0, GL_RGBA, GL_UNSIGNED_BYTE, imgRoughness.getPixelsPtr());
+            glGenerateMipmap(GL_TEXTURE_2D);
+        }
+
         glBindTexture(GL_TEXTURE_2D, 0);
+
+        crystal_.setColorTexture(crystalTexture_);
+        crystal_.setNormalTexture(crystalNormalTexture_);
+        crystal_.setRoughnessTexture(crystalRoughnessTexture_);
     }
 
 	void updateCameraInput() 
@@ -360,12 +410,51 @@ struct App : public OpenGLApplication
         glm::mat4 mvp = projView * model;
         glUniformMatrix4fv(mvpUniformLocation_, 1, GL_FALSE, glm::value_ptr(mvp));
 
+
+        GLint modelLoc = glGetUniformLocation(transformSP_, "uModel");
+        if (modelLoc != -1)
+            glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+
+
+        glm::mat3 normalMatrix = glm::transpose(glm::inverse(glm::mat3(model)));
+        GLint normalMatLoc = glGetUniformLocation(transformSP_, "uNormalMatrix");
+        if (normalMatLoc != -1)
+            glUniformMatrix3fv(normalMatLoc, 1, GL_FALSE, glm::value_ptr(normalMatrix));
+
+
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, crystalTexture_);
         glUniform1i(glGetUniformLocation(transformSP_, "uTexture"), 0);
 
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, crystalNormalTexture_);
+        glUniform1i(glGetUniformLocation(transformSP_, "uNormalMap"), 1);
+
+        glActiveTexture(GL_TEXTURE2);
+        glBindTexture(GL_TEXTURE_2D, crystalRoughnessTexture_);
+        glUniform1i(glGetUniformLocation(transformSP_, "uRoughnessMap"), 2);
+
+        // Set lighting parameters
+        GLint lightPosLoc = glGetUniformLocation(transformSP_, "uLightPos");
+        if (lightPosLoc != -1)
+            glUniform3f(lightPosLoc, 5.0f, 5.0f, 5.0f);
+
+        GLint viewPosLoc = glGetUniformLocation(transformSP_, "uViewPos");
+        if (viewPosLoc != -1)
+            glUniform3fv(viewPosLoc, 1, glm::value_ptr(cameraPosition_));
+
+        GLint lightColorLoc = glGetUniformLocation(transformSP_, "uLightColor");
+        if (lightColorLoc != -1)
+            glUniform3f(lightColorLoc, 1.0f, 1.0f, 1.0f);
+
         crystal_.draw(projView);
 
+
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, 0);
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, 0);
+        glActiveTexture(GL_TEXTURE2);
         glBindTexture(GL_TEXTURE_2D, 0);
     }
 
@@ -416,6 +505,8 @@ private:
     Crystal crystal_;
 
     GLuint crystalTexture_;
+    GLuint crystalNormalTexture_;
+    GLuint crystalRoughnessTexture_;
 
     sf::Clock clock;
     float deltaTime_;
