@@ -13,17 +13,10 @@ uniform vec3 uLightColor;
 uniform float uLightIntensity;
 uniform bool uLightingEnabled;
 
-uniform bool uUseNormalMap;
-uniform bool uUseRoughnessMap;
-
 out vec4 FragColor;
 
 vec3 getNormalFromMap()
 {
-    if (!uUseNormalMap) {
-        return normalize(fragNormal);
-    }
-    
     vec3 tangentNormal = texture(uNormalMap, texCoord).xyz * 2.0 - 1.0;
 
     vec3 Q1 = dFdx(fragPos);
@@ -56,10 +49,10 @@ vec3 calculateCrystalLighting(vec3 baseColor, vec3 position, vec3 normal, float 
     vec3 viewDir = normalize(uViewPos - position);
     vec3 halfwayDir = normalize(lightDir + viewDir);
     
-    float shininess = uUseRoughnessMap ? mix(128.0, 8.0, roughness) : 64.0;
+    float shininess = mix(128.0, 8.0, roughness);
     float spec = pow(max(dot(viewDir, reflect(-lightDir, normal)), 0.0), shininess);
     
-    float specularStrength = uUseRoughnessMap ? (1.0 - roughness) : 0.5;
+    float specularStrength = (1.0 - roughness);
     vec3 specular = vec3(0.8, 0.9, 1.0) * spec * specularStrength;
 
     vec3 emission = baseColor * 0.1;
@@ -72,7 +65,7 @@ vec3 calculateCrystalLighting(vec3 baseColor, vec3 position, vec3 normal, float 
 void main()
 {
     vec4 texColor = texture(uTexture, texCoord);
-    float roughness = uUseRoughnessMap ? texture(uRoughnessMap, texCoord).r : 0.5;
+    float roughness = texture(uRoughnessMap, texCoord).r;
     vec3 normal = getNormalFromMap();
     
     vec3 baseColor = texColor.rgb * vertexColor;
